@@ -3,20 +3,24 @@ package be.seeseemelk.jtsc.types;
 import java.util.ArrayList;
 import java.util.List;
 
+import be.seeseemelk.jtsc.Accessor;
+
 public class DecompiledMethod
 {
 	private DecompiledClass owner;
 	private boolean staticMethod;
+	private final Accessor accessor;
 	private String name;
 	private BaseType returnType;
 	private List<BaseType> parameterTypes = new ArrayList<>();
 	private List<VariableType> parameterExpressions = new ArrayList<>();
 	
-	public DecompiledMethod(DecompiledClass owner, String name, String descriptor, boolean staticMethod)
+	public DecompiledMethod(DecompiledClass owner, String name, String descriptor, boolean staticMethod, Accessor accessor)
 	{
 		this.owner = owner;
 		this.name = name;
 		this.staticMethod = staticMethod;
+		this.accessor = accessor;
 		
 		parseDescriptor(descriptor);
 		generateParameters(descriptor);
@@ -47,16 +51,15 @@ public class DecompiledMethod
 		return staticMethod;
 	}
 	
-	public String mangleName()
+	public String mangleShortName()
 	{
-		if (staticMethod)
-			return "S" + owner.mangleName() + "_" + name
-					.replace("<", "__")
-					.replace(">", "__");
-		else
-			return "M" + owner.mangleName() + "_" + name
-					.replace("<", "__")
-					.replace(">", "__");
+		//return name.replace("<", "__").replace(">", "__");
+		return name;
+	}
+	
+	public String mangleLongName()
+	{
+		return owner.mangleName() + "::" + mangleShortName();
 	}
 	
 	public List<BaseType> getParameterTypes()
@@ -69,13 +72,40 @@ public class DecompiledMethod
 		return parameterExpressions;
 	}
 	
-	public String getMethodDefinition()
+	private String getModifiers()
+	{
+		if (isStaticMethod())
+			return "static ";
+		else
+			return "";
+	}
+	
+	public String getShortMethodDefinition()
+	{
+		var builder = new StringBuilder(getModifiers());
+		builder.append(getReturnType().mangleType() + " " + mangleShortName() + "(");
+		
+		builder.append(getParameterDefinitions());
+		
+		builder.append(")");
+		return builder.toString();
+	}
+
+	public String getLongMethodDefinition()
 	{
 		var builder = new StringBuilder();
-		builder.append(getReturnType().mangleType() + " " + mangleName() + "(");
+		builder.append(getReturnType().mangleType() + " " + mangleLongName() + "(");
 		
+		builder.append(getParameterDefinitions());
+		
+		builder.append(")");
+		return builder.toString();
+	}
+	
+	public String getParameterDefinitions()
+	{
 		if (parameterTypes.isEmpty())
-			builder.append("void");
+			return "";
 		else
 		{
 			var parameters = new String[parameterTypes.size()];
@@ -83,31 +113,43 @@ public class DecompiledMethod
 			{
 				parameters[i] = parameterTypes.get(i).mangleType() + " " + parameterExpressions.get(i).asValue();
 			}
-			builder.append(String.join(", ", parameters));
+			return String.join(", ", parameters);
 		}
-		
-		builder.append(")");
-		return builder.toString();
 	}
 	
 	private void parseDescriptor(String descriptor)
 	{
-		this.returnType = BaseType.findType(descriptor.replaceAll("^\\(.*\\)", ""));
+		int start = descriptor.lastIndexOf(')') + 1;
+		returnType = BaseType.findType(descriptor.substring(start));
 	}
 	
 	private void generateParameters(String descriptor)
 	{
-		if (!isStaticMethod())
+		if (!isStaticMethod() && !name.equals("<init>"))
 		{
-			parameterTypes.add(new InternalType("struct " + owner.mangleType() + "*"));
+			parameterTypes.add(new InternalType(owner.mangleType()));
 			parameterExpressions.add(new VariableType("v" + parameterExpressions.size()));
 		}
-		
+
 		int end = descriptor.lastIndexOf(')');
-		for (int i = 1; i < end; i++)
+		if (end > 1)
 		{
-			parameterTypes.add(BaseType.findType(Character.toString(descriptor.charAt(i))));
-			parameterExpressions.add(new VariableType("v" + parameterExpressions.size()));
+			var parameters = descriptor.substring(1, end);
+			for (var parameter : parameters.split(";"))
+			{
+				parameterTypes.add(BaseType.findType(parameter));
+				parameterExpressions.add(new VariableType("v" + parameterExpressions.size()));
+			}
 		}
+	}
+	
+	public String asNamedPointer()
+	{
+		return String.format("%s(*%s)(%s)", getReturnType().mangleType(), mangleLongName(), getParameterDefinitions());
+	}
+	
+	public Accessor getAccessor()
+	{
+		return accessor;
 	}
 }

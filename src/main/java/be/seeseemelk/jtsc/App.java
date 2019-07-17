@@ -14,7 +14,15 @@ public class App
 
 	public static void main(String[] args) throws FileNotFoundException, IOException
 	{
-		var recompiler = new Recompiler(Paths.get("input/TestApp.class"), Paths.get("output"));
-		recompiler.recompile();
+		if (args.length > 0)
+		{
+			for (var arg : args)
+				new Recompiler(Paths.get(arg), Paths.get("output")).recompile();;
+		}
+		else
+		{
+			var recompiler = new Recompiler(Paths.get("input/TestApp.class"), Paths.get("output"));
+			recompiler.recompile();
+		}
 	}
 }

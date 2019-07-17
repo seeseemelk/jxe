@@ -42,8 +42,13 @@ public interface BaseType
 	{
 		if (type.length() == 1)
 			return new PrimitiveType(type);
-		else
-			throw new RuntimeException("Unsupported type '" + type + "'");
+		else 
+			return switch (type.charAt(0))
+			{
+				case 'L' -> new DecompiledClass(null, type.substring(1));
+				case '[' -> new ArrayType(findType(type.substring(1)));
+				default -> throw new RuntimeException("Unsupported type '" + type + "'");
+			};
 	}
 	
 	/*public String asVariableString()

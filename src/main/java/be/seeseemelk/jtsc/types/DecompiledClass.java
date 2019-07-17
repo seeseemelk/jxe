@@ -2,11 +2,17 @@ package be.seeseemelk.jtsc.types;
 
 public class DecompiledClass implements BaseType
 {
-	private String fullyQualifiedName;
+	private final String fullyQualifiedName;
+	private final DecompiledClass owner;
 	
-	public DecompiledClass(String fullyQualifiedName)
+	public DecompiledClass(DecompiledClass owner, String fullyQualifiedName)
 	{
-		this.fullyQualifiedName = fullyQualifiedName;
+		this.owner = owner;
+		
+		if (fullyQualifiedName.charAt(fullyQualifiedName.length() - 1) == ';')
+			this.fullyQualifiedName = fullyQualifiedName.substring(0, fullyQualifiedName.length() - 1);
+		else
+			this.fullyQualifiedName = fullyQualifiedName;
 	}
 	
 	public String getFullyQualifiedName()
@@ -22,12 +28,29 @@ public class DecompiledClass implements BaseType
 	
 	public String mangleName()
 	{
-		return fullyQualifiedName.replace('/', '_');
+		return fullyQualifiedName.replace("/", "::");
+	}
+	
+	public String[] getNameParts()
+	{
+		return mangleName().split("::");
+	}
+	
+	public String[] getNamespaceParts()
+	{
+		var mangled = mangleName();
+		int lastIndex = mangled.lastIndexOf("::");
+		return mangled.substring(0, lastIndex).split("::");
 	}
 	
 	@Override
 	public String mangleType()
 	{
-		return "C" + fullyQualifiedName.replace('/', '_');
+		return mangleName() + "*";
+	}
+	
+	public DecompiledClass getOwner()
+	{
+		return owner;
 	}
 }

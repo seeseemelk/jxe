@@ -1,20 +1,29 @@
 package be.seeseemelk.jtsc.types;
 
+import be.seeseemelk.jtsc.Accessor;
+
 public class DecompiledField
 {
 	private final BaseType type;
+	private final Accessor accessor;
 	private final String name;
 	
-	public DecompiledField(BaseType type, String name)
+	public DecompiledField(BaseType type, Accessor accessor, String name)
 	{
 		super();
 		this.type = type;
+		this.accessor = accessor;
 		this.name = name;
 	}
 
 	public BaseType getType()
 	{
 		return type;
+	}
+	
+	public Accessor getAccessor()
+	{
+		return accessor;
 	}
 
 	public String getName()

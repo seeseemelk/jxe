@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
@@ -15,24 +16,28 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
+import be.seeseemelk.jtsc.Accessor;
 import be.seeseemelk.jtsc.types.BaseType;
 import be.seeseemelk.jtsc.types.DecompiledClass;
 import be.seeseemelk.jtsc.types.DecompiledMethod;
+import be.seeseemelk.jtsc.types.InternalType;
 import be.seeseemelk.jtsc.types.PrimitiveType;
 import be.seeseemelk.jtsc.types.PrimitiveType.PType;
 import be.seeseemelk.jtsc.types.VariableType;
 
 class RecompilerMethodVisitor extends MethodNode
 {
-	private static final String INDENT = "  ";
+	private static final String INDENT = "    ";
 	private boolean generateHeader;
 	private PrintStream out;
 	private Consumer<DecompiledMethod> callback;
 	private DecompiledMethod method;
 	private Deque<BaseType> stack = new ArrayDeque<>();
 	private int labelCount = 0;
+	private boolean readyForCode = false;
 	
 	public RecompilerMethodVisitor(PrintStream output, DecompiledMethod method,
 			Consumer<DecompiledMethod> callback, boolean generateHeader)
@@ -47,11 +52,24 @@ class RecompilerMethodVisitor extends MethodNode
 	@Override
 	public void visitEnd()
 	{
-		
 		if (!generateHeader)
 		{
-			out.print(method.getMethodDefinition());
-			out.println(" {");
+			if (method.getName().equals("<init>"))
+			{
+				out.print(method.getOwner().mangleName());
+				out.print("::");
+				out.print(method.getOwner().getClassName());
+				out.print("(");
+				out.print(method.getParameterDefinitions());
+				out.println(")");
+				// We expect a call to the super constructor still.
+			}
+			else
+			{
+				out.print(method.getLongMethodDefinition());
+				out.println(" {");
+				readyForCode = true;
+			}
 			
 			// Find all labels that are actually used.
 			instructions.iterator().forEachRemaining(node ->
@@ -75,7 +93,8 @@ class RecompilerMethodVisitor extends MethodNode
 					case AbstractInsnNode.INT_INSN -> processIntInsn((IntInsnNode) node);
 					case AbstractInsnNode.JUMP_INSN -> processJumpInsn((JumpInsnNode) node);
 					case AbstractInsnNode.FRAME -> {}
-					//case AbstractInsnNode.INSN -> {}
+					case AbstractInsnNode.FIELD_INSN -> processFieldInsn((FieldInsnNode) node);
+					case AbstractInsnNode.TYPE_INSN -> processTypeInsn((TypeInsnNode) node);
 					default ->
 						throw new UnsupportedOperationException(String.format("Instruction 0x%X (%s) is not supported", node.getOpcode(), node.getClass().getSimpleName()));
 				}
@@ -95,7 +114,8 @@ class RecompilerMethodVisitor extends MethodNode
 	
 	private void processLineNumber(LineNumberNode node)
 	{
-		printfln("// Line %d", node.line);
+		if (readyForCode)
+			printfln("// Line %d", node.line);
 	}
 	
 	private void processVarInsn(VarInsnNode node)
@@ -121,13 +141,30 @@ class RecompilerMethodVisitor extends MethodNode
 		switch (node.getOpcode())
 		{
 			case Opcodes.INVOKESPECIAL -> {
-				System.err.println("WARNING: INVOKESPECIAL (0xB7) to " + node.name + " is not yet supported");
+				if (method.getName().equals("<init>") && node.name.equals("<init>"))
+				{
+					var targetClass = new DecompiledClass(null, node.owner);
+					var target = new DecompiledMethod(targetClass, node.name, node.desc, true, Accessor.UNSPECIFIED);
+					
+					var targetName = targetClass.getClassName();
+
+					var builder = new StringBuilder();
+					var arguments = new String[target.getParameterTypes().size()];
+					for (int i = 0; i < arguments.length; i++)
+						arguments[i] = stack.pop().asValue();
+					builder.append(String.join(", ", arguments));
+					
+					printfln("%s: %s(%s) {", INDENT, targetName, builder);
+					readyForCode = true;
+				}
+				else
+					System.err.println("WARNING: INVOKESPECIAL (0xB7) to " + node.name + " is not yet supported");
 			}
 			case Opcodes.INVOKESTATIC -> {
-				var targetClass = new DecompiledClass(node.owner);
-				var target = new DecompiledMethod(targetClass, node.name, node.desc, true);
+				var targetClass = new DecompiledClass(null, node.owner);
+				var target = new DecompiledMethod(targetClass, node.name, node.desc, true, Accessor.UNSPECIFIED);
 				
-				StringBuilder builder = new StringBuilder(target.mangleName()).append('(');
+				StringBuilder builder = new StringBuilder(target.mangleShortName()).append('(');
 				
 				//var parameters = (String[]) target.getParameterTypes().stream().map(BaseType::asValue).toArray();
 				var arguments = new String[target.getParameterTypes().size()];
@@ -145,8 +182,11 @@ class RecompilerMethodVisitor extends MethodNode
 	{
 		switch (node.getOpcode())
 		{
-			case Opcodes.RETURN -> println("return;");
-			case Opcodes.IRETURN -> printfln("return %s;", stack.pop().asValue());
+			case Opcodes.RETURN -> {
+				if (!method.getName().equals("<init>"))
+					println("return;");
+			}
+			case Opcodes.IRETURN, Opcodes.ARETURN -> printfln("return %s;", stack.pop().asValue());
 			case Opcodes.IADD -> binaryExpression("+");
 			case Opcodes.ISUB -> binaryExpression("-");
 			case Opcodes.IMUL -> binaryExpression("*");
@@ -158,6 +198,11 @@ class RecompilerMethodVisitor extends MethodNode
 			case Opcodes.ICONST_3 -> produceIconst(3);
 			case Opcodes.ICONST_4 -> produceIconst(4);
 			case Opcodes.ICONST_5 -> produceIconst(5);
+			case Opcodes.DUP -> {
+				if (stack.isEmpty())
+					System.err.println("Stack is empty");
+				stack.push(stack.peek());
+			}
 			default -> throw new RuntimeException(String.format("Unsupported Insn opcode 0x%X", node.getOpcode()));
 		}
 	}
@@ -171,7 +216,7 @@ class RecompilerMethodVisitor extends MethodNode
 	{
 		switch (node.getOpcode())
 		{
-			case Opcodes.BIPUSH -> stack.add(new PrimitiveType(PrimitiveType.PType.INTEGER, node.operand));
+			case Opcodes.BIPUSH -> stack.push(new PrimitiveType(PrimitiveType.PType.INTEGER, node.operand));
 			default -> throw new RuntimeException(String.format("Unsupported IntInsn opcode 0x%X %d", node.getOpcode(), node.operand));
 		}
 	}
@@ -204,6 +249,38 @@ class RecompilerMethodVisitor extends MethodNode
 		}
 	}
 	
+	private void processFieldInsn(FieldInsnNode node)
+	{
+		switch (node.getOpcode())
+		{
+			//default -> System.err.printf("WARNING: FieldInsnNode (0x%X) is not yet supported%n", node.getOpcode());
+			case Opcodes.PUTFIELD -> {
+				var value = stack.pop();
+				var ref = stack.pop();
+				printfln("%s->%s = %s;", ref.asValue(), node.name, value.asValue());
+			}
+			case Opcodes.GETFIELD -> {
+				var ref = stack.pop();
+				var command = String.format("(%s->%s)", ref.asValue(), node.name);
+				stack.push(new VariableType(command));
+			}
+			default -> throw new RuntimeException(String.format("Unsupported FieldInsnNode opcode 0x%X", node.getOpcode()));
+		}
+	}
+	
+	private void processTypeInsn(TypeInsnNode node)
+	{
+		switch (node.getOpcode())
+		{
+			case Opcodes.NEW -> {
+				var targetClass = new DecompiledClass(null, node.desc);
+				var exp = String.format("(new %s())", targetClass.mangleName());
+				stack.push(new VariableType(exp));
+			}
+			default -> throw new RuntimeException(String.format("Unsupported TypeInsnNode opcode 0x%X %s", node.getOpcode(), node.desc)); 
+		}
+	}
+	
 	private void produceConditionalBranch(String condition, JumpInsnNode node)
 	{
 		printfln("if (%s %s 0) goto %s;", stack.pop().asValue(), condition, getLabel(node.label));
@@ -224,9 +301,13 @@ class RecompilerMethodVisitor extends MethodNode
 		return node;
 	}
 	
-	private static String getVariable(int i)
+	private String getVariable(int i)
 	{
-		return "v" + i;
+		if (method.isStaticMethod())
+			return "v" + i;
+		if (i == 0)
+			return "this";
+		return "v" + (i - 1);
 	}
 	
 	private void printfln(String fmt, Object... args)

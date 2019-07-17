@@ -8,6 +8,8 @@ public class PrimitiveType implements BaseType
 	{
 		INTEGER("int"),
 		BOOLEAN("bool"),
+		ARRAY("[]"),
+		OBJECT(""),
 		VOID("void");
 		
 		private String type;
@@ -50,7 +52,9 @@ public class PrimitiveType implements BaseType
 			case "I" -> PType.INTEGER;
 			case "V" -> PType.VOID;
 			case "Z" -> PType.BOOLEAN;
-			default -> throw new UnsupportedOperationException("Not a valid option");
+			case "[" -> PType.ARRAY;
+			case "L" -> PType.OBJECT;
+			default -> throw new UnsupportedOperationException("Not a valid option '" + type + "'");
 		};
 	}
 	

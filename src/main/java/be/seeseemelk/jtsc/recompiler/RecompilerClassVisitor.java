@@ -9,8 +9,8 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.MethodNode;
 
+import be.seeseemelk.jtsc.Accessor;
 import be.seeseemelk.jtsc.types.BaseType;
 import be.seeseemelk.jtsc.types.DecompiledClass;
 import be.seeseemelk.jtsc.types.DecompiledField;
@@ -21,6 +21,7 @@ class RecompilerClassVisitor extends ClassVisitor
 	private boolean generateHeader;
 	private PrintStream out;
 	private DecompiledClass klass;
+	private DecompiledClass superKlass;
 	private List<DecompiledField> classFields = new ArrayList<>();
 	private List<DecompiledMethod> methods = new ArrayList<>();
 	
@@ -34,7 +35,8 @@ class RecompilerClassVisitor extends ClassVisitor
 	@Override
 	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
 	{
-		klass = new DecompiledClass(name);
+		superKlass = new DecompiledClass(null, superName);
+		klass = new DecompiledClass(superKlass, name);
 		
 		out.println("// Class Name: " + name);
 		if (superName != null)
@@ -50,18 +52,21 @@ class RecompilerClassVisitor extends ClassVisitor
 		
 		if (generateHeader)
 		{
-			var guardName = klass.mangleType() + "_h";
+			var guardName = klass.mangleType().replace("::", "_") + "_hpp";
 			out.println("#ifndef " + guardName);
 			out.println("#define " + guardName);
 			out.println();
 		}
 		else
 		{
-			out.println("#include \"" + klass.getClassName() + ".h\"");
+			out.println("#include \"" + klass.getClassName() + ".hpp\"");
 		}
-		
-		out.println("#include <stdbool.h>");
+
+		out.println("#include \"jtsc_core.hpp\"");
 		out.println();
+		
+		if (generateHeader)
+			writeNamespaceStart();
 	}
 	
 	@Override
@@ -69,9 +74,13 @@ class RecompilerClassVisitor extends ClassVisitor
 	{
 		if (generateHeader)
 		{
-			writeClassFields();
+			writeClass();
+			writeNamespaceEnd();
+			//writeStructPrototypes();
+			//writeVTable();
+			//writeClassFields();
 			out.println();
-			writeMethodPrototypes();
+			//writeMethodPrototypes();
 			out.println();
 			out.println("#endif");
 		}
@@ -80,38 +89,44 @@ class RecompilerClassVisitor extends ClassVisitor
 	@Override
 	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value)
 	{
-		classFields.add(new DecompiledField(BaseType.findType(descriptor), name));
+		classFields.add(new DecompiledField(BaseType.findType(descriptor), Accessor.fromAccessInt(access), name));
 		return null;
 	}
 	
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions)
 	{
-		/*var method = new DecompiledMethod(klass, name, descriptor);
-		methods.add();
-		return null;*/
 		boolean isStatic = (access & Opcodes.ACC_STATIC) > 0;
-		var method = new DecompiledMethod(klass, name, descriptor, isStatic);
-		
-		/*if (generateHeader)
-		{
-			methods.add(method);
-			return null;
-		}
-		
-		out.print(method.getMethodDefinition());
-		out.println(" {");*/
-		/*return new MethodNode(Opcodes.ASM7)
-		{
-			
-		}*/
+		var method = new DecompiledMethod(klass, name, descriptor, isStatic, Accessor.fromAccessInt(access));
 		return new RecompilerMethodVisitor(out, method, methods::add, generateHeader);
+	}
+	
+	/*private void writeStructPrototypes()
+	{
+		out.println("// Class struct prototypes");
+		out.println("struct " + klass.mangleType() + ";");
+		out.println("struct vtable_" + klass.mangleName() + ";");
+		out.println();
+	}
+	
+	private void writeVTable()
+	{
+		out.println("// Class struct definitions");
+		out.println("struct vtable_" + klass.mangleName() + " {");
+		
+		for (var method : methods)
+			if (!method.isStaticMethod())
+				out.printf("  %s;%n", method.asNamedPointer());
+		
+		out.println("};");
+		out.println("");
 	}
 	
 	private void writeClassFields()
 	{
 		out.println("struct " + klass.mangleType() + " {");
-		out.println("  unsigned int __ref_count;");
+		//out.println("  unsigned int __ref_count;");
+		out.printf("  struct %s *super;%n", superKlass.mangleType());
 		
 		for (var classField : classFields)
 		{
@@ -124,11 +139,76 @@ class RecompilerClassVisitor extends ClassVisitor
 	
 	private void writeMethodPrototypes()
 	{
+		out.println("// Method prototypes");
 		for (var method : methods)
 		{
 			out.print(method.getMethodDefinition());
 			out.println(";");
 		}
+	}*/
+	
+	private void writeClass()
+	{
+		printfln("class %s : public %s {", klass.getClassName(), superKlass.mangleName());
+		var accessor = Accessor.UNSPECIFIED;
+		
+		printfln("// Class fields");
+		for (var classField : classFields)
+		{
+			if (accessor != classField.getAccessor())
+			{
+				accessor = classField.getAccessor();
+				printfln("%s:", accessor.toString().toLowerCase());
+			}
+			
+			printfln("    %s %s;", classField.getType().mangleType(), classField.getName());
+		}
+		
+		println();
+		printfln("// Methods");
+		for (var method : methods)
+		{
+			if (accessor != method.getAccessor())
+			{
+				accessor = method.getAccessor();
+				printfln("%s:", accessor.toString().toLowerCase());
+			}
+			
+			if (method.getName().equals("<init>"))
+				printfln("    %s(%s);", klass.getClassName(), method.getParameterDefinitions());
+			else
+				printfln("    %s;", method.getShortMethodDefinition());
+		}
+		
+		printfln("};");
+	}
+	
+	private void writeNamespaceStart()
+	{
+		for (var part : klass.getNamespaceParts())
+		{
+			printfln("namespace %s {%n", part);
+		}
+	}
+	
+	private void writeNamespaceEnd()
+	{
+		println();
+		for (var part : klass.getNamespaceParts())
+		{
+			printfln("}%n", part);
+		}
+	}
+	
+	private void printfln(String fmt, Object... args)
+	{
+		out.printf(fmt, args);
+		out.println();
+	}
+	
+	private void println()
+	{
+		out.println();
 	}
 }
 
