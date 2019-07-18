@@ -45,15 +45,15 @@ public class PrimitiveType implements BaseType
 		this.type = type;
 	}
 	
-	public PrimitiveType(String type)
+	public PrimitiveType(char type)
 	{
 		this.type = switch(type)
 		{
-			case "I" -> PType.INTEGER;
-			case "V" -> PType.VOID;
-			case "Z" -> PType.BOOLEAN;
-			case "[" -> PType.ARRAY;
-			case "L" -> PType.OBJECT;
+			case 'I' -> PType.INTEGER;
+			case 'V' -> PType.VOID;
+			case 'Z' -> PType.BOOLEAN;
+			case '[' -> PType.ARRAY;
+			case 'L' -> PType.OBJECT;
 			default -> throw new UnsupportedOperationException("Not a valid option '" + type + "'");
 		};
 	}

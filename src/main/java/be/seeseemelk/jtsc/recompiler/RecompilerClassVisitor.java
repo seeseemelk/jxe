@@ -4,6 +4,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -12,23 +13,27 @@ import org.objectweb.asm.Opcodes;
 
 import be.seeseemelk.jtsc.Accessor;
 import be.seeseemelk.jtsc.types.BaseType;
+import be.seeseemelk.jtsc.types.ClassImport;
 import be.seeseemelk.jtsc.types.DecompiledClass;
 import be.seeseemelk.jtsc.types.DecompiledField;
 import be.seeseemelk.jtsc.types.DecompiledMethod;
 
 class RecompilerClassVisitor extends ClassVisitor
 {
-	private boolean generateHeader;
-	private PrintStream out;
+	private final boolean generateHeader;
+	private final PrintStream out;
+	private final Set<ClassImport> imports;
 	private DecompiledClass klass;
 	private DecompiledClass superKlass;
 	private List<DecompiledField> classFields = new ArrayList<>();
 	private List<DecompiledMethod> methods = new ArrayList<>();
 	
-	public RecompilerClassVisitor(OutputStream outputStream, boolean generateHeader)
+	public RecompilerClassVisitor(OutputStream outputStream, Set<ClassImport> imports, boolean generateHeader)
 	{
 		super(Opcodes.ASM7);
 		out = new PrintStream(outputStream);
+		
+		this.imports = imports;
 		this.generateHeader = generateHeader;
 	}
 	
@@ -62,7 +67,14 @@ class RecompilerClassVisitor extends ClassVisitor
 			out.println("#include \"" + klass.getClassName() + ".hpp\"");
 		}
 
-		out.println("#include \"jtsc_core.hpp\"");
+		//out.println("#include \"jtsc_core.hpp\"");
+		for (var classImport : imports)
+		{
+			if (!generateHeader || classImport.isPublic())
+			{
+				printfln("#include \"%s\"", classImport.getClassFqn() + ".hpp");
+			}
+		}
 		out.println();
 		
 		if (generateHeader)
@@ -76,11 +88,7 @@ class RecompilerClassVisitor extends ClassVisitor
 		{
 			writeClass();
 			writeNamespaceEnd();
-			//writeStructPrototypes();
-			//writeVTable();
-			//writeClassFields();
 			out.println();
-			//writeMethodPrototypes();
 			out.println();
 			out.println("#endif");
 		}
@@ -89,7 +97,7 @@ class RecompilerClassVisitor extends ClassVisitor
 	@Override
 	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value)
 	{
-		classFields.add(new DecompiledField(BaseType.findType(descriptor), Accessor.fromAccessInt(access), name));
+		classFields.add(new DecompiledField(BaseType.findType(descriptor).getValue0(), Accessor.fromAccessInt(access), name));
 		return null;
 	}
 	
@@ -181,22 +189,23 @@ class RecompilerClassVisitor extends ClassVisitor
 		}
 		
 		printfln("};");
+		println();
 	}
 	
 	private void writeNamespaceStart()
 	{
 		for (var part : klass.getNamespaceParts())
 		{
-			printfln("namespace %s {%n", part);
+			printfln("namespace %s {", part);
 		}
+		println();
 	}
 	
 	private void writeNamespaceEnd()
 	{
-		println();
 		for (var part : klass.getNamespaceParts())
 		{
-			printfln("}%n", part);
+			printfln("}", part);
 		}
 	}
 	

@@ -1,5 +1,10 @@
 package be.seeseemelk.jtsc.types;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.javatuples.Pair;
+
 public interface BaseType
 {
 	/*private Object type;
@@ -38,17 +43,56 @@ public interface BaseType
 		throw new UnsupportedOperationException("Cannot access a " + getClass().getSimpleName() + " as a value");
 	}
 	
-	public static BaseType findType(String type)
+	public static Pair<BaseType, String> findType(String type)
 	{
-		if (type.length() == 1)
-			return new PrimitiveType(type);
-		else 
-			return switch (type.charAt(0))
+		int firstSemicolon = type.indexOf(';');
+		return switch (type.charAt(0))
+		{
+			case 'I', 'V', 'Z' -> 
+				Pair.with(new PrimitiveType(type.charAt(0)), type.substring(1));
+			case 'L' ->
+				Pair.with(new DecompiledClass(null, type.substring(0, firstSemicolon)),
+						type.substring(firstSemicolon + 1));
+			case '[' -> {
+				var pair = findType(type.substring(1));
+				break Pair.with(new ArrayType(pair.getValue0()), pair.getValue1());
+			}
+			default -> throw new RuntimeException("Unsupported type '" + type + "'");
+		};
+	}
+	
+	public static List<BaseType> findTypes(String type)
+	{
+		var types = new ArrayList<BaseType>();
+		
+		while (type.length() > 0)
+		{
+			/*switch (type.charAt(0))
 			{
-				case 'L' -> new DecompiledClass(null, type.substring(1));
-				case '[' -> new ArrayType(findType(type.substring(1)));
-				default -> throw new RuntimeException("Unsupported type '" + type + "'");
-			};
+				case 'I', 'V', 'Z' -> {
+					types.add(new PrimitiveType(type.charAt(0)));
+					type = type.substring(1);
+				}
+				case 'L' -> {
+					var endPosition = type.indexOf(';');
+					types.add(new DecompiledClass(null, type.substring(0, endPosition)));
+					type = type.substring(endPosition + 1);
+				}
+				case '[' -> {
+					var endPosition = type.indexOf(';');
+					types.add(new ArrayType(findType(type.substring(1))));
+					type = type.substring(endPosition + 1);
+				}
+				default -> {
+					throw new RuntimeException("Unsupported type '" + type + "'");
+				}
+			};*/
+			var pair = findType(type);
+			types.add(pair.getValue0());
+			type = pair.getValue1();
+		}
+		
+		return types;
 	}
 	
 	/*public String asVariableString()

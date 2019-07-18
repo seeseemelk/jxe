@@ -1,30 +1,35 @@
 package be.seeseemelk.jtsc.recompiler;
 
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.objectweb.asm.ClassReader;
 
 public class Recompiler
 {
 	private Path input;
-	private Path output;
+	private Path outputDirectory;
+	//private List<Pair<Path, List<ClassImport>>> filesToCompile = new ArrayList<>();
+	private List<Path> sourceFiles = new ArrayList<>();
 
-	public Recompiler(Path input, Path output)
+	public Recompiler(Path input, Path outputDirectory)
 	{
 		this.input = input;
-		this.output = output;
+		this.outputDirectory = outputDirectory;
 	}
 	
 	public void recompile() throws IOException
 	{
-		generateHeader();
-		generateSource();
-		copyResources(output);
+		//generateHeader();
+		//generateSource();
+		generate();
+		copyResources(outputDirectory);
 	}
 	
 	public String getClassName()
@@ -32,7 +37,48 @@ public class Recompiler
 		return input.getFileName().toString().replaceAll("\\.class$", "");
 	}
 	
-	private void generateHeader() throws IOException
+	private void generate() throws IOException
+	{
+		try (var inputStream = new FileInputStream(input.toFile()))
+		{
+			var reader = new ClassReader(inputStream);
+			var firstPass = new FirstPassClassVisitor(input, outputDirectory, sourceFiles::add);
+			reader.accept(firstPass, 0);
+		}
+		
+		generateMakefile();
+	}
+	
+	private void generateMakefile() throws IOException
+	{
+		try (var output = new PrintStream(outputDirectory.resolve("makefile").toFile()))
+		{
+			output.println("all: program");
+			output.println();
+			output.print("program:");
+			
+			var builder = new StringBuilder();
+			for (var sourceFile : sourceFiles)
+			{
+				var sourceFilename = outputDirectory.relativize(sourceFile).toString().replace(".cpp", "");
+				builder.append(' ').append(sourceFilename).append(".o");
+			}
+			var files = builder.toString();
+			output.println(files);
+			output.printf("\tg++ -o program%s", files);
+			output.println();
+			output.println();
+				
+			for (var sourceFile : sourceFiles)
+			{
+				var sourceFilename = outputDirectory.relativize(sourceFile).toString().replace(".cpp", "");
+				output.printf("%s.o: %s.cpp%n", sourceFilename, sourceFilename);
+				output.printf("\tg++ -C -o %s.o %s.cpp%n%n", sourceFilename, sourceFilename);
+			}
+		}
+	}
+	
+	/*private void generateHeader() throws IOException
 	{
 		try (var inputStream = new FileInputStream(input.toFile()))
 		{
@@ -54,7 +100,7 @@ public class Recompiler
 				reader.accept(new RecompilerClassVisitor(outputStream, false), 0);
 			}
 		}
-	}
+	}*/
 
 	private void copyResources(Path dir) throws IOException
 	{

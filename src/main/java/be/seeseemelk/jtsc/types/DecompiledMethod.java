@@ -120,7 +120,7 @@ public class DecompiledMethod
 	private void parseDescriptor(String descriptor)
 	{
 		int start = descriptor.lastIndexOf(')') + 1;
-		returnType = BaseType.findType(descriptor.substring(start));
+		returnType = BaseType.findType(descriptor.substring(start)).getValue0();
 	}
 	
 	private void generateParameters(String descriptor)
@@ -134,10 +134,15 @@ public class DecompiledMethod
 		int end = descriptor.lastIndexOf(')');
 		if (end > 1)
 		{
-			var parameters = descriptor.substring(1, end);
+			/*var parameters = descriptor.substring(1, end);
 			for (var parameter : parameters.split(";"))
 			{
 				parameterTypes.add(BaseType.findType(parameter));
+				parameterExpressions.add(new VariableType("v" + parameterExpressions.size()));
+			}*/
+			for (var parameter : BaseType.findTypes(descriptor.substring(1, end)))
+			{
+				parameterTypes.add(parameter);
 				parameterExpressions.add(new VariableType("v" + parameterExpressions.size()));
 			}
 		}

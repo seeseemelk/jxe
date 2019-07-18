@@ -23,6 +23,7 @@ repositories {
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     implementation 'com.google.guava:guava:27.0.1-jre'
+    implementation 'org.javatuples:javatuples:1.2'
     
     implementation 'org.ow2.asm:asm:7.1'
     implementation 'org.ow2.asm:asm-tree:7.1'
