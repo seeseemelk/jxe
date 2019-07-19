@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc.recompiler;
+package be.seeseemelk.jxe.recompiler;
 
 import java.io.PrintStream;
 import java.util.ArrayDeque;
@@ -13,20 +13,21 @@ import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-import be.seeseemelk.jtsc.Accessor;
-import be.seeseemelk.jtsc.types.BaseType;
-import be.seeseemelk.jtsc.types.DecompiledClass;
-import be.seeseemelk.jtsc.types.DecompiledMethod;
-import be.seeseemelk.jtsc.types.InternalType;
-import be.seeseemelk.jtsc.types.PrimitiveType;
-import be.seeseemelk.jtsc.types.PrimitiveType.PType;
-import be.seeseemelk.jtsc.types.VariableType;
+import be.seeseemelk.jxe.Accessor;
+import be.seeseemelk.jxe.types.BaseType;
+import be.seeseemelk.jxe.types.DecompiledClass;
+import be.seeseemelk.jxe.types.DecompiledMethod;
+import be.seeseemelk.jxe.types.PrimitiveType;
+import be.seeseemelk.jxe.types.PrimitiveType.PType;
+import be.seeseemelk.jxe.types.StringType;
+import be.seeseemelk.jxe.types.VariableType;
 
 class RecompilerMethodVisitor extends MethodNode
 {
@@ -61,8 +62,10 @@ class RecompilerMethodVisitor extends MethodNode
 				out.print(method.getOwner().getClassName());
 				out.print("(");
 				out.print(method.getParameterDefinitions());
-				out.println(")");
-				// We expect a call to the super constructor still.
+				out.print(")");
+				// We expect a call to the super constructor still, unless we're java.lang.Object.
+				if (method.getOwner().isJavaLangObject())
+					out.println(" {");
 			}
 			else
 			{
@@ -95,6 +98,7 @@ class RecompilerMethodVisitor extends MethodNode
 					case AbstractInsnNode.FRAME -> {}
 					case AbstractInsnNode.FIELD_INSN -> processFieldInsn((FieldInsnNode) node);
 					case AbstractInsnNode.TYPE_INSN -> processTypeInsn((TypeInsnNode) node);
+					case AbstractInsnNode.LDC_INSN -> processLdcInsn((LdcInsnNode) node);
 					default ->
 						throw new UnsupportedOperationException(String.format("Instruction 0x%X (%s) is not supported", node.getOpcode(), node.getClass().getSimpleName()));
 				}
@@ -102,7 +106,16 @@ class RecompilerMethodVisitor extends MethodNode
 			
 			out.println("}");
 			out.println();
+			
+			// If this is a main function, let's generate a function called main.
+			if (method.isMain())
+			{
+				out.println("int main() {");
+				printfln("%s();", method.mangleLongName());
+				out.println("}");
+			}
 		}
+		
 		callback.accept(method);
 	}
 	
@@ -143,6 +156,10 @@ class RecompilerMethodVisitor extends MethodNode
 			case Opcodes.INVOKESPECIAL -> {
 				if (method.getName().equals("<init>") && node.name.equals("<init>"))
 				{
+					// java.lang.Object should not be calling its own super constructor.
+					if (method.getOwner().isJavaLangObject())
+						break;
+					
 					var targetClass = new DecompiledClass(null, node.owner);
 					var target = new DecompiledMethod(targetClass, node.name, node.desc, true, Accessor.UNSPECIFIED);
 					
@@ -154,6 +171,7 @@ class RecompilerMethodVisitor extends MethodNode
 						arguments[i] = stack.pop().asValue();
 					builder.append(String.join(", ", arguments));
 					
+					out.println();
 					printfln("%s: %s(%s) {", INDENT, targetName, builder);
 					readyForCode = true;
 				}
@@ -164,15 +182,22 @@ class RecompilerMethodVisitor extends MethodNode
 				var targetClass = new DecompiledClass(null, node.owner);
 				var target = new DecompiledMethod(targetClass, node.name, node.desc, true, Accessor.UNSPECIFIED);
 				
-				StringBuilder builder = new StringBuilder(target.mangleShortName()).append('(');
-				
-				//var parameters = (String[]) target.getParameterTypes().stream().map(BaseType::asValue).toArray();
-				var arguments = new String[target.getParameterTypes().size()];
-				for (int i = 0; i < arguments.length; i++)
-					arguments[i] = stack.pop().asValue();
-				builder.append(String.join(", ", arguments)).append(')');
-				
-				stack.push(new VariableType(builder.toString()));
+				if (targetClass.getFullyQualifiedName().equals("be/seeseemelk/jxe/api/JXE"))
+				{
+					invocationToJXEInternal(node, target);
+				}
+				else
+				{
+					StringBuilder builder = new StringBuilder(target.mangleLongName()).append('(');
+					
+					//var parameters = (String[]) target.getParameterTypes().stream().map(BaseType::asValue).toArray();
+					var arguments = new String[target.getParameterTypes().size()];
+					for (int i = 0; i < arguments.length; i++)
+						arguments[i] = stack.pop().asValue();
+					builder.append(String.join(", ", arguments)).append(')');
+					
+					stack.push(new VariableType(builder.toString()));
+				}
 			}
 			default -> throw new RuntimeException(String.format("Unsupported MethodInsn opcode 0x%X %s", node.getOpcode(), node.name));
 		}
@@ -183,6 +208,10 @@ class RecompilerMethodVisitor extends MethodNode
 		switch (node.getOpcode())
 		{
 			case Opcodes.RETURN -> {
+				if (!stack.isEmpty())
+					printfln("%s;", stack.pop().asValue());
+				if (!stack.isEmpty())
+					throw new IllegalStateException("Stack should be empty");
 				if (!method.getName().equals("<init>"))
 					println("return;");
 			}
@@ -281,6 +310,14 @@ class RecompilerMethodVisitor extends MethodNode
 		}
 	}
 	
+	private void processLdcInsn(LdcInsnNode node)
+	{
+		if (node.cst instanceof String)
+			stack.push(new StringType((String) node.cst));
+		else
+			throw new RuntimeException(String.format("Unsupported LDC instruction of type '%s'", node.cst.getClass().getSimpleName()));
+	}
+	
 	private void produceConditionalBranch(String condition, JumpInsnNode node)
 	{
 		printfln("if (%s %s 0) goto %s;", stack.pop().asValue(), condition, getLabel(node.label));
@@ -291,6 +328,18 @@ class RecompilerMethodVisitor extends MethodNode
 		var b = stack.pop().asValue();
 		var a = stack.pop().asValue();
 		printfln("if (%s %s %s) goto %s;", a, condition, b, getLabel(node.label));
+	}
+	
+	private void invocationToJXEInternal(MethodInsnNode node, DecompiledMethod target)
+	{
+		switch (target.getName())
+		{
+			case "code" -> {
+				var string = (StringType) stack.pop();
+				stack.push(new VariableType(string.getString()));
+			}
+			default -> throw new UnsupportedOperationException("JXE." + target.getName() + " is not supported");
+		}
 	}
 	
 	@Override

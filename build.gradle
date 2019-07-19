@@ -45,5 +45,20 @@ run {
     jvmArgs(['--enable-preview'])
 }
 
+sourceSets {
+	jxelib {
+		java {
+			srcDirs = ["src/jxelib/java"] 
+			outputDir = file("jxelib")
+		}
+	}
+}
+
+classes.dependsOn compileJxelibJava
+
+clean {
+	delete sourceSets.jxelib.java.outputDir
+}
+
 // Define the main class for the application
-mainClassName = 'be.seeseemelk.jtsc.App'
+mainClassName = 'be.seeseemelk.jxe.App'

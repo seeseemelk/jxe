@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc;
+package be.seeseemelk.jxe;
 
 import org.objectweb.asm.Opcodes;
 

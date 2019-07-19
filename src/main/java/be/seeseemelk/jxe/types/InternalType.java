@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc.types;
+package be.seeseemelk.jxe.types;
 
 public class InternalType implements BaseType
 {

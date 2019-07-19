@@ -1,6 +1,6 @@
-package be.seeseemelk.jtsc.types;
+package be.seeseemelk.jxe.types;
 
-import be.seeseemelk.jtsc.Accessor;
+import be.seeseemelk.jxe.Accessor;
 
 public class DecompiledField
 {

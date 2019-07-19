@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc.types;
+package be.seeseemelk.jxe.types;
 
 import java.util.ArrayList;
 import java.util.List;

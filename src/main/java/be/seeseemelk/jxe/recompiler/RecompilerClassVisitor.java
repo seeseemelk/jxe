@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc.recompiler;
+package be.seeseemelk.jxe.recompiler;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -11,12 +11,12 @@ import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import be.seeseemelk.jtsc.Accessor;
-import be.seeseemelk.jtsc.types.BaseType;
-import be.seeseemelk.jtsc.types.ClassImport;
-import be.seeseemelk.jtsc.types.DecompiledClass;
-import be.seeseemelk.jtsc.types.DecompiledField;
-import be.seeseemelk.jtsc.types.DecompiledMethod;
+import be.seeseemelk.jxe.Accessor;
+import be.seeseemelk.jxe.types.BaseType;
+import be.seeseemelk.jxe.types.ClassImport;
+import be.seeseemelk.jxe.types.DecompiledClass;
+import be.seeseemelk.jxe.types.DecompiledField;
+import be.seeseemelk.jxe.types.DecompiledMethod;
 
 class RecompilerClassVisitor extends ClassVisitor
 {
@@ -44,8 +44,10 @@ class RecompilerClassVisitor extends ClassVisitor
 		klass = new DecompiledClass(superKlass, name);
 		
 		out.println("// Class Name: " + name);
-		if (superName != null)
-			out.println("// Super Class: " + superName);
+		
+		if (!klass.isJavaLangObject())
+				out.println("// Super Class: " + superName);
+		
 		if (signature != null)
 			out.println("// Signature: " + superName);
 		if (interfaces != null && interfaces.length > 0)
@@ -57,22 +59,21 @@ class RecompilerClassVisitor extends ClassVisitor
 		
 		if (generateHeader)
 		{
-			var guardName = klass.mangleType().replace("::", "_") + "_hpp";
+			var guardName = klass.getFullyQualifiedName().replace("/", "_") + "_hpp";
 			out.println("#ifndef " + guardName);
 			out.println("#define " + guardName);
 			out.println();
 		}
 		else
 		{
-			out.println("#include \"" + klass.getClassName() + ".hpp\"");
+			printfln("#include \"%s.hpp\"", klass.getFullyQualifiedName());
 		}
 
-		//out.println("#include \"jtsc_core.hpp\"");
 		for (var classImport : imports)
 		{
 			if (!generateHeader || classImport.isPublic())
 			{
-				printfln("#include \"%s\"", classImport.getClassFqn() + ".hpp");
+				printfln("#include \"%s\"", classImport.getClassFqn());
 			}
 		}
 		out.println();
@@ -157,7 +158,10 @@ class RecompilerClassVisitor extends ClassVisitor
 	
 	private void writeClass()
 	{
-		printfln("class %s : public %s {", klass.getClassName(), superKlass.mangleName());
+		if (klass.isJavaLangObject())
+			printfln("class %s {", klass.getClassName());
+		else
+			printfln("class %s : public %s {", klass.getClassName(), superKlass.mangleName());
 		var accessor = Accessor.UNSPECIFIED;
 		
 		printfln("// Class fields");
@@ -220,8 +224,6 @@ class RecompilerClassVisitor extends ClassVisitor
 		out.println();
 	}
 }
-
-
 
 
 

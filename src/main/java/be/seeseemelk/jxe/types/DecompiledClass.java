@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc.types;
+package be.seeseemelk.jxe.types;
 
 public class DecompiledClass implements BaseType
 {
@@ -8,6 +8,9 @@ public class DecompiledClass implements BaseType
 	public DecompiledClass(DecompiledClass owner, String fullyQualifiedName)
 	{
 		this.owner = owner;
+		
+		if (fullyQualifiedName.startsWith("jxe/"))
+			fullyQualifiedName = fullyQualifiedName.substring(4);
 		
 		if (fullyQualifiedName.charAt(fullyQualifiedName.length() - 1) == ';')
 			this.fullyQualifiedName = fullyQualifiedName.substring(0, fullyQualifiedName.length() - 1);
@@ -52,5 +55,10 @@ public class DecompiledClass implements BaseType
 	public DecompiledClass getOwner()
 	{
 		return owner;
+	}
+	
+	public boolean isJavaLangObject()
+	{
+		return fullyQualifiedName.equals("java/lang/Object");
 	}
 }

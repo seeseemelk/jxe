@@ -1,10 +1,11 @@
-package be.seeseemelk.jtsc.recompiler;
+package be.seeseemelk.jxe.recompiler;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,10 +27,36 @@ public class Recompiler
 	
 	public void recompile() throws IOException
 	{
-		//generateHeader();
-		//generateSource();
-		generate();
+		Files.createDirectories(outputDirectory);
+		recompilePath(Path.of("jxelib"));
+		recompilePath(input);
+	}
+	
+	private void recompilePath(Path input) throws IOException
+	{
+		if (Files.isRegularFile(input))
+			generate(input);
+		else
+		{
+			try (var stream = Files.walk(input))
+			{
+				stream.filter(Files::isRegularFile)
+					.filter(file -> file.toString().endsWith(".class"))
+					.forEach(file -> {
+						try
+						{
+							generate(file);
+						}
+						catch (IOException e)
+						{
+							System.err.printf("Failed to process file '%s', reason: %s", file.toString(), e.getMessage());
+							e.printStackTrace();
+						}
+					});
+			}
+		}
 		copyResources(outputDirectory);
+		generateMakefile();
 	}
 	
 	public String getClassName()
@@ -37,16 +64,15 @@ public class Recompiler
 		return input.getFileName().toString().replaceAll("\\.class$", "");
 	}
 	
-	private void generate() throws IOException
+	private void generate(Path input) throws IOException
 	{
+		System.out.printf("CLASS %s%n", input.toString());
 		try (var inputStream = new FileInputStream(input.toFile()))
 		{
 			var reader = new ClassReader(inputStream);
 			var firstPass = new FirstPassClassVisitor(input, outputDirectory, sourceFiles::add);
 			reader.accept(firstPass, 0);
 		}
-		
-		generateMakefile();
 	}
 	
 	private void generateMakefile() throws IOException
@@ -65,7 +91,7 @@ public class Recompiler
 			}
 			var files = builder.toString();
 			output.println(files);
-			output.printf("\tg++ -o program%s", files);
+			output.printf("\tg++ ${CPPFLAGS} -I. -o program%s", files);
 			output.println();
 			output.println();
 				
@@ -73,7 +99,7 @@ public class Recompiler
 			{
 				var sourceFilename = outputDirectory.relativize(sourceFile).toString().replace(".cpp", "");
 				output.printf("%s.o: %s.cpp%n", sourceFilename, sourceFilename);
-				output.printf("\tg++ -C -o %s.o %s.cpp%n%n", sourceFilename, sourceFilename);
+				output.printf("\tg++ ${CPPFLAGS} -I. -c -o %s.o %s.cpp%n%n", sourceFilename, sourceFilename);
 			}
 		}
 	}

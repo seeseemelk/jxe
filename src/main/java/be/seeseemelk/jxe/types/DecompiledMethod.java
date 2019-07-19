@@ -1,9 +1,9 @@
-package be.seeseemelk.jtsc.types;
+package be.seeseemelk.jxe.types;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import be.seeseemelk.jtsc.Accessor;
+import be.seeseemelk.jxe.Accessor;
 
 public class DecompiledMethod
 {
@@ -156,5 +156,12 @@ public class DecompiledMethod
 	public Accessor getAccessor()
 	{
 		return accessor;
+	}
+	
+	public boolean isMain()
+	{
+		return staticMethod &&
+				accessor == Accessor.PUBLIC &&
+				name.equals("main");
 	}
 }

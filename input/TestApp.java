@@ -1,5 +1,8 @@
 package be.seeseemelk.testapp;
 
+import be.seeseemelk.jxe.api.Import;
+import be.seeseemelk.jxe.api.JXE;
+
 public class TestApp
 {
 	//private static int myProperty = 2;
@@ -53,6 +56,11 @@ public class TestApp
 	public static int createOne()
 	{
 		return new TestApp().a;
+	}
+	
+	public static void main()
+	{
+		JXE.code("puts(\"Hello, world!\")");
 	}
 
 }
