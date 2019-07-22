@@ -48,7 +48,8 @@ run {
 sourceSets {
 	jxelib {
 		java {
-			srcDirs = ["src/jxelib/java"] 
+			srcDirs = ["src/jxelib/java"]
+			compileClasspath = [file("src/main/java")]
 			outputDir = file("jxelib")
 		}
 	}

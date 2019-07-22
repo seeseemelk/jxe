@@ -1,8 +1,9 @@
 package be.seeseemelk.testapp;
 
-import be.seeseemelk.jxe.api.Import;
+import be.seeseemelk.jxe.api.Include;
 import be.seeseemelk.jxe.api.JXE;
 
+@Include("stdio.h")
 public class TestApp
 {
 	//private static int myProperty = 2;

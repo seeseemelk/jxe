@@ -9,8 +9,8 @@ import java.lang.annotation.Target;
 
 @Retention(CLASS)
 @Target(TYPE)
-@Repeatable(Imports.class)
-public @interface Import
+@Repeatable(Includes.class)
+public @interface Include
 {
 	String value();
 }
