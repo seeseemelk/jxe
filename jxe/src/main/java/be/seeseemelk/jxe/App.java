@@ -20,7 +20,7 @@ public class App
 		}
 		else
 		{
-			var recompiler = new Recompiler(Paths.get("input"), Paths.get("output"));
+			var recompiler = new Recompiler(Paths.get("../input_class"), Paths.get("../output"));
 			recompiler.recompile();
 		}
 	}

@@ -1,6 +1,6 @@
 package be.seeseemelk.jxe.api;
 
-@Include("iostream")
+@Include("stdio.h")
 public final class JXEDebug
 {
 	private JXEDebug()
@@ -10,6 +10,7 @@ public final class JXEDebug
 	
 	public static void println(String str)
 	{
-		JXE.code("puts(\"" + str + "\")");
+		JXE.var("const char* wow", str);
+		JXE.code("puts(\"wow\")");
 	}
 }

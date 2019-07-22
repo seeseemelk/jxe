@@ -51,7 +51,7 @@ public interface BaseType
 			case 'I', 'V', 'Z' -> 
 				Pair.with(new PrimitiveType(type.charAt(0)), type.substring(1));
 			case 'L' ->
-				Pair.with(new DecompiledClass(null, type.substring(0, firstSemicolon)),
+				Pair.with(new DecompiledClass(null, type.substring(1, firstSemicolon)),
 						type.substring(firstSemicolon + 1));
 			case '[' -> {
 				var pair = findType(type.substring(1));

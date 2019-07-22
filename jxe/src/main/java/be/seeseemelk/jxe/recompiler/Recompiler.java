@@ -28,7 +28,7 @@ public class Recompiler
 	public void recompile() throws IOException
 	{
 		Files.createDirectories(outputDirectory);
-		recompilePath(Path.of("jxelib"));
+		recompilePath(Path.of(System.getenv("JXELIB_DIR")));
 		recompilePath(input);
 	}
 	

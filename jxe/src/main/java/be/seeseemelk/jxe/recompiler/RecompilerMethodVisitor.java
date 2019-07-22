@@ -176,7 +176,7 @@ class RecompilerMethodVisitor extends MethodNode
 					readyForCode = true;
 				}
 				else
-					System.err.println("WARNING: INVOKESPECIAL (0xB7) to " + node.name + " is not yet supported");
+					System.err.println("  WARNING: INVOKESPECIAL (0xB7) to " + node.name + " is not yet supported");
 			}
 			case Opcodes.INVOKESTATIC -> {
 				var targetClass = new DecompiledClass(null, node.owner);
@@ -337,6 +337,15 @@ class RecompilerMethodVisitor extends MethodNode
 			case "code" -> {
 				var string = (StringType) stack.pop();
 				stack.push(new VariableType(string.getString()));
+			}
+			case "var" -> {
+				var value = stack.pop().asValue();
+				
+				if (!(stack.peek() instanceof StringType))
+					throw new IllegalArgumentException("First argument must be a string literal");
+				var name = ((StringType) stack.pop()).getString();
+				
+				printfln("%s = %s;", name, value);
 			}
 			default -> throw new UnsupportedOperationException("JXE." + target.getName() + " is not supported");
 		}

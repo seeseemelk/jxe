@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
@@ -30,7 +31,8 @@ public class FirstPassClassVisitor extends ClassVisitor
 	private DecompiledClass superKlass;
 	private final Set<String> publicImports = new HashSet<>();
 	private final Set<String> privateImports = new HashSet<>();
-
+	private boolean skipped = false;
+	
 	public FirstPassClassVisitor(Path input, Path output, Consumer<Path> callback)
 	{
 		super(Opcodes.ASM7);
@@ -46,16 +48,26 @@ public class FirstPassClassVisitor extends ClassVisitor
 		superKlass = new DecompiledClass(null, superName);
 		klass = new DecompiledClass(superKlass, name);
 		
+		if (Arrays.asList(interfaces).contains("java/lang/annotation/Annotation"))
+			skipClass("is interface");
+		
 		publicImports.add(superKlass.getFullyQualifiedName() + ".hpp");
 	}
 	
 	@Override
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible)
 	{
+		if (skipped)
+			return null;
+		
 		return switch (descriptor)
 		{
-			case "Lbe/seeseemelk/jxe/api/Import;" -> new ImportAnnotationVisitor(privateImports::add);
-			case "Lbe/seeseemelk/jxe/api/Imports;" -> new MultiImportAnnotationVisitor(privateImports::add);
+			case "Lbe/seeseemelk/jxe/api/Include;" -> new ImportAnnotationVisitor(privateImports::add);
+			case "Lbe/seeseemelk/jxe/api/Includes;" -> new MultiImportAnnotationVisitor(privateImports::add);
+			case "Lbe/seeseemelk/jxe/api/SkipCompile;" -> {
+				skipClass("marked @SkipCompile");
+				break null;
+			}
 			default -> null;
 		};
 	}
@@ -63,12 +75,15 @@ public class FirstPassClassVisitor extends ClassVisitor
 	@Override
 	public void visitEnd()
 	{
+		if (skipped)
+			return;
+		
 		try
 		{
 			var dir = output;
 			for (var directory : klass.getNamespaceParts())
 				dir = dir.resolve(directory);
-			System.out.println("DIR " + dir.toString());
+			//System.out.println("  DIR " + dir.toString());
 			Files.createDirectories(dir);
 			
 			generateHeader(dir);
@@ -84,6 +99,9 @@ public class FirstPassClassVisitor extends ClassVisitor
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions)
 	{
+		if (skipped)
+			return null;
+		
 		boolean isStatic = (access & Opcodes.ACC_STATIC) > 0;
 		var method = new DecompiledMethod(klass, name, descriptor, isStatic, Accessor.fromAccessInt(access));
 		
@@ -141,6 +159,12 @@ public class FirstPassClassVisitor extends ClassVisitor
 		}
 		
 		return output.resolve(klass.getClassName() + ".cpp");
+	}
+	
+	private void skipClass(String reason)
+	{
+		System.out.printf("  SKIPPED %s%n", reason);
+		skipped = true;
 	}
 
 }

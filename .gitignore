@@ -29,5 +29,7 @@ hs_err_pid*
 .gradle
 .project
 .settings
+
+# Directories to ignore
+/input_class
 /output
-/jxelib
