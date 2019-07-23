@@ -59,9 +59,15 @@ public class TestApp
 		return new TestApp().a;
 	}
 	
-	public static void main()
+	public static int[] arr()
 	{
-		JXE.code("puts(\"Hello, world!\")");
+		int test[] = {1, 2, 3};
+		return test;
+	}
+	
+	public static void main()
+	{	
+		//JXE.code("puts(\"Hello, world!\")");
 	}
 
 }

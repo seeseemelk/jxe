@@ -23,7 +23,7 @@
 hs_err_pid*
 
 !/gradle/**/*.jar
-/bin
+bin/
 /build
 .classpath
 .gradle

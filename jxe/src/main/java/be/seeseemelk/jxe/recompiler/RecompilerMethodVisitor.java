@@ -145,6 +145,11 @@ class RecompilerMethodVisitor extends MethodNode
 			}
 			case Opcodes.ILOAD -> stack.push(new VariableType(getVariable(node.var)));
 			case Opcodes.ALOAD -> stack.push(new VariableType(getVariable(node.var)));
+			case Opcodes.ASTORE -> {
+				System.err.println(String.format("Unsupported VarInsn opcode ASTORE (0x%X) %d", node.getOpcode(), node.var));
+				printfln("// " + stack.pop().asValue());
+				//stack.push(new VariableType("???"));
+			}
 			default -> throw new RuntimeException(String.format("Unsupported VarInsn opcode 0x%X %d", node.getOpcode(), node.var));
 		}
 	}
@@ -227,6 +232,13 @@ class RecompilerMethodVisitor extends MethodNode
 			case Opcodes.ICONST_3 -> produceIconst(3);
 			case Opcodes.ICONST_4 -> produceIconst(4);
 			case Opcodes.ICONST_5 -> produceIconst(5);
+			case Opcodes.IASTORE -> {
+				var value = stack.pop().asValue();
+				var index = stack.pop().asValue();
+				var arr = stack.pop().asValue();
+				//stack.push(new VariableType(String.format("jxe_store_array(%s, %s, %s)", arr, index, value)));
+				printfln("jxe_store_array(%s, %s, %s)", arr, index, value);
+			}
 			case Opcodes.DUP -> {
 				if (stack.isEmpty())
 					System.err.println("Stack is empty");
@@ -246,6 +258,14 @@ class RecompilerMethodVisitor extends MethodNode
 		switch (node.getOpcode())
 		{
 			case Opcodes.BIPUSH -> stack.push(new PrimitiveType(PrimitiveType.PType.INTEGER, node.operand));
+			case Opcodes.NEWARRAY -> {
+				if (!(stack.peek() instanceof PrimitiveType))
+					throw new IllegalArgumentException("Array size must be a primitive int");
+				var primitive = (PrimitiveType) stack.pop();
+				primitive.getValue()
+						.map(Integer::parseInt)
+						.ifPresent(size -> stack.push(createArray(node.operand, size)));
+			}
 			default -> throw new RuntimeException(String.format("Unsupported IntInsn opcode 0x%X %d", node.getOpcode(), node.operand));
 		}
 	}
@@ -397,6 +417,20 @@ class RecompilerMethodVisitor extends MethodNode
 	private String getLabel(LabelNode label)
 	{
 		return getLabel(label.getLabel());
+	}
+	
+	private VariableType createArray(int arrayType, int size)
+	{	
+		return switch (arrayType)
+		{
+			case 10 -> createArray("int", size);
+			default -> throw new IllegalArgumentException("Unknown arary type " + arrayType);
+		};
+	}
+	
+	private VariableType createArray(String arrayType, int size)
+	{
+		return new VariableType(String.format("jxe_new_array<%s>(%d)", arrayType, size));
 	}
 	
 	/*private void addInstruction(Runnable runnable)

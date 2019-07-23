@@ -10,7 +10,7 @@ public final class JXEDebug
 	
 	public static void println(String str)
 	{
-		JXE.var("const char* wow", str);
+		//JXE.var("const char* wow", str);
 		JXE.code("puts(\"wow\")");
 	}
 }

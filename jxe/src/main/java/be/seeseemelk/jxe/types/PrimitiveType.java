@@ -58,6 +58,11 @@ public class PrimitiveType implements BaseType
 		};
 	}
 	
+	public PType getType()
+	{
+		return type;
+	}
+	
 	@Override
 	public String mangleType()
 	{
