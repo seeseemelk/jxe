@@ -7,7 +7,13 @@ public class PrimitiveType implements BaseType
 	public enum PType
 	{
 		INTEGER("int"),
+		BYTE("byte"),
 		BOOLEAN("bool"),
+		LONG("long"),
+		DOUBLE("double"),
+		FLOAT("float"),
+		CHAR("char"),
+		SHORT("short"),
 		ARRAY("[]"),
 		OBJECT(""),
 		VOID("void");
@@ -50,8 +56,14 @@ public class PrimitiveType implements BaseType
 		this.type = switch(type)
 		{
 			case 'I' -> PType.INTEGER;
+			case 'B' -> PType.BYTE;
 			case 'V' -> PType.VOID;
 			case 'Z' -> PType.BOOLEAN;
+			case 'J' -> PType.LONG;
+			case 'D' -> PType.DOUBLE;
+			case 'C' -> PType.CHAR;
+			case 'S' -> PType.SHORT;
+			case 'F' -> PType.FLOAT;
 			case '[' -> PType.ARRAY;
 			case 'L' -> PType.OBJECT;
 			default -> throw new UnsupportedOperationException("Not a valid option '" + type + "'");

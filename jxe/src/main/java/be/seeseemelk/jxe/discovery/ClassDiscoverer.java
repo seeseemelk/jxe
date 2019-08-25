@@ -2,6 +2,7 @@ package be.seeseemelk.jxe.discovery;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -16,8 +17,8 @@ import be.seeseemelk.jxe.types.DecompiledMethod;
 
 public class ClassDiscoverer extends ClassVisitor
 {
-	private DecompiledClass partial;
-	private Optional<DecompiledClass> decompiledClass;
+	private Optional<DecompiledClass> optionalPartial = Optional.empty();
+	private Optional<DecompiledClass> decompiledClass = Optional.empty();
 	private String filename;
 	
 	public ClassDiscoverer(String filename)
@@ -29,24 +30,33 @@ public class ClassDiscoverer extends ClassVisitor
 	@Override
 	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
 	{
+		if (name.equals("module-info") || name.equals("java/lang/Object"))
+			return;
+		
 		if (superName.equalsIgnoreCase("java/lang/Object;"))
-			partial = new DecompiledClass(DecompiledClass.OBJECT, name);
+		{
+			optionalPartial = Optional.of(new DecompiledClass(DecompiledClass.OBJECT, name));
+		}
 		else
 		{
 			var superKlass = new DecompiledClass(superName);
-			partial = new DecompiledClass(superKlass, name);
+			optionalPartial = Optional.of(new DecompiledClass(superKlass, name));
 		}
 		
-		System.out.format("DISCOVER CLASS %s%n", partial.getFullyQualifiedName());
+		System.out.format("CLASS %s%n", optionalPartial.get().getFullyQualifiedName());
 	}
 	
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions)
 	{
+		if (optionalPartial.isEmpty())
+			return null;
+		var partial = optionalPartial.get();
+		
 		boolean isStatic = Protection.isStatic(access);
 		var partialMethod = new DecompiledMethod(partial, name, descriptor, isStatic, Protection.fromProtectionInt(access));
 		return new MethodDiscoverer(filename, partialMethod, discoveredMethod -> {
-			System.out.format("DISCOVER METHOD %s%n", discoveredMethod.getName());
+			System.out.format("METHOD %s%n", discoveredMethod.getName());
 			partial.addMethod(discoveredMethod);
 		});
 	}
@@ -54,6 +64,10 @@ public class ClassDiscoverer extends ClassVisitor
 	@Override
 	public void visitEnd()
 	{
+		if (optionalPartial.isEmpty())
+			return;
+		var partial = optionalPartial.get();
+		
 		decompiledClass = Optional.of(partial);
 	}
 	
@@ -66,10 +80,16 @@ public class ClassDiscoverer extends ClassVisitor
 	{
 		try (var inputStream = new FileInputStream(file.toFile()))
 		{
-			var reader = new ClassReader(inputStream);
-			var classDiscoverer = new ClassDiscoverer(file.toString());
-			reader.accept(classDiscoverer, 0);
-			return classDiscoverer;
+			return discoverClass(file.toString(), inputStream);
 		}
+	}
+	
+	public static ClassDiscoverer discoverClass(String filename, InputStream input) throws IOException
+	{
+		System.out.println("FILE " + filename);
+		var reader = new ClassReader(input);
+		var classDiscoverer = new ClassDiscoverer(filename.toString());
+		reader.accept(classDiscoverer, 0);
+		return classDiscoverer;
 	}
 }

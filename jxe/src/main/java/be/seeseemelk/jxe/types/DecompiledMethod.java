@@ -11,6 +11,7 @@ import java.util.Set;
 import be.seeseemelk.jxe.Protection;
 import be.seeseemelk.jxe.codegen.JavaGenerator;
 import be.seeseemelk.jxe.discovery.Flag;
+import be.seeseemelk.jxe.references.MethodReference;
 
 public class DecompiledMethod
 {
@@ -145,11 +146,6 @@ public class DecompiledMethod
 			}
 		}
 	}
-	
-	/*public String asNamedPointer()
-	{
-		return String.format("%s(*%s)(%s)", getReturnType().mangleType(), mangleLongName(), getParameterDefinitions());
-	}*/
 	
 	public Protection getAccessor()
 	{

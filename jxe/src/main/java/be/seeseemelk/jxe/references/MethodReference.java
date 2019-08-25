@@ -1,4 +1,4 @@
-package be.seeseemelk.jxe.types;
+package be.seeseemelk.jxe.references;
 
 import java.util.Objects;
 

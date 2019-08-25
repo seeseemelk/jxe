@@ -6,6 +6,8 @@ package be.seeseemelk.jxe;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 
 import be.seeseemelk.jxe.discovery.Library;
 import be.seeseemelk.jxe.rules.PureRule;
@@ -52,17 +54,55 @@ public class App
 		//var recompiler = new Recompiler(input, Paths.get("../output"));
 		//recompiler.recompile();
 	}
+	
+	public static void autoDetectPureness(Path input) throws ZipException, IOException
+	{
+		try (var zip = new ZipFile(input.toFile()))
+		{
+			var library = new Library();
+			zip.stream()
+				.filter(entry -> entry.getName().startsWith("classes/"))
+				.filter(entry -> entry.getName().endsWith(".class"))
+				.filter(entry -> !entry.isDirectory())
+				.forEach(entry -> {
+					try (var inputStream = zip.getInputStream(entry))
+					{
+						library.discover(input.toString() + ":" + entry.getName(), inputStream);
+					}
+					catch (IOException e)
+					{
+						throw new RuntimeException(e);
+					}
+				});
+		}
+		/*.forEach(entry -> {
+			System.out.println(entry.getName());
+		});*/
+	}
 
 	public static void main(String[] args) throws IOException
 	{
-		if (args.length > 0)
+		if (args.length == 0)
+		{
+			recompile(Paths.get("../input_class"));
+		}
+		else if (args.length == 1)
+		{
+			switch (args[0])
+			{
+				case "--pure-jar" -> {
+					autoDetectPureness(Paths.get("/usr/lib/jvm/java-12-openjdk/jmods/java.base.jmod"));
+				}
+			}
+		}
+		/*if (args.length > 0)
 		{
 			for (var arg : args)
 				recompile(Paths.get(arg));
 		}
 		else
 		{
-			recompile(Paths.get("../input_class"));
-		}
+			
+		}*/
 	}
 }

@@ -10,10 +10,10 @@ import org.objectweb.asm.Type;
 
 import be.seeseemelk.jxe.FilePosition;
 import be.seeseemelk.jxe.api.Pure;
+import be.seeseemelk.jxe.references.FieldReference;
+import be.seeseemelk.jxe.references.MethodReference;
 import be.seeseemelk.jxe.types.DecompiledMethod;
 import be.seeseemelk.jxe.types.FieldAccess;
-import be.seeseemelk.jxe.types.FieldReference;
-import be.seeseemelk.jxe.types.MethodReference;
 import be.seeseemelk.jxe.types.VariableAccess.Action;
 
 public class MethodDiscoverer extends MethodVisitor

@@ -1,6 +1,7 @@
 package be.seeseemelk.jxe.discovery;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,11 +9,11 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import be.seeseemelk.jxe.references.ClassReference;
+import be.seeseemelk.jxe.references.MethodReference;
 import be.seeseemelk.jxe.rules.BaseRule;
-import be.seeseemelk.jxe.types.ClassReference;
 import be.seeseemelk.jxe.types.DecompiledClass;
 import be.seeseemelk.jxe.types.DecompiledMethod;
-import be.seeseemelk.jxe.types.MethodReference;
 
 public class Library
 {
@@ -26,11 +27,28 @@ public class Library
 				.forEach(optional -> optional.ifPresent(this::registerClassFromDiscoverer));
 	}
 	
+	public void discover(String filename, InputStream input) throws IOException
+	{
+		discoverClass(filename, input).ifPresent(this::registerClassFromDiscoverer);
+	}
+	
 	private Optional<ClassDiscoverer> discoverClass(Path input)
 	{
 		try
 		{
 			return Optional.of(ClassDiscoverer.discoverClass(input));
+		}
+		catch (IOException e)
+		{
+			return Optional.<ClassDiscoverer>empty();
+		}
+	}
+	
+	private Optional<ClassDiscoverer> discoverClass(String filename, InputStream input)
+	{
+		try
+		{
+			return Optional.of(ClassDiscoverer.discoverClass(filename, input));
 		}
 		catch (IOException e)
 		{

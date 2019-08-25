@@ -3,6 +3,7 @@ package be.seeseemelk.jxe.types;
 import java.util.Objects;
 
 import be.seeseemelk.jxe.FilePosition;
+import be.seeseemelk.jxe.references.FieldReference;
 
 public class FieldAccess extends VariableAccess
 {
