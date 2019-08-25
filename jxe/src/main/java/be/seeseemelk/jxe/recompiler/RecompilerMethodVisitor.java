@@ -20,7 +20,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-import be.seeseemelk.jxe.Accessor;
+import be.seeseemelk.jxe.Protection;
 import be.seeseemelk.jxe.types.BaseType;
 import be.seeseemelk.jxe.types.DecompiledClass;
 import be.seeseemelk.jxe.types.DecompiledMethod;
@@ -61,7 +61,7 @@ class RecompilerMethodVisitor extends MethodNode
 				out.print("::");
 				out.print(method.getOwner().getClassName());
 				out.print("(");
-				out.print(method.getParameterDefinitions());
+				//out.print(method.getParameterDefinitions());
 				out.print(")");
 				// We expect a call to the super constructor still, unless we're java.lang.Object.
 				if (method.getOwner().isJavaLangObject())
@@ -69,7 +69,7 @@ class RecompilerMethodVisitor extends MethodNode
 			}
 			else
 			{
-				out.print(method.getLongMethodDefinition());
+				//out.print(method.getLongMethodDefinition());
 				out.println(" {");
 				readyForCode = true;
 			}
@@ -166,7 +166,7 @@ class RecompilerMethodVisitor extends MethodNode
 						break;
 					
 					var targetClass = new DecompiledClass(null, node.owner);
-					var target = new DecompiledMethod(targetClass, node.name, node.desc, true, Accessor.UNSPECIFIED);
+					var target = new DecompiledMethod(targetClass, node.name, node.desc, true, Protection.UNSPECIFIED);
 					
 					var targetName = targetClass.getClassName();
 
@@ -185,7 +185,7 @@ class RecompilerMethodVisitor extends MethodNode
 			}
 			case Opcodes.INVOKESTATIC -> {
 				var targetClass = new DecompiledClass(null, node.owner);
-				var target = new DecompiledMethod(targetClass, node.name, node.desc, true, Accessor.UNSPECIFIED);
+				var target = new DecompiledMethod(targetClass, node.name, node.desc, true, Protection.UNSPECIFIED);
 				
 				if (targetClass.getFullyQualifiedName().equals("be/seeseemelk/jxe/api/JXE"))
 				{

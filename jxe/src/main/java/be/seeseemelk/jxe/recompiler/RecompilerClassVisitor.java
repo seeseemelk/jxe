@@ -11,7 +11,7 @@ import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import be.seeseemelk.jxe.Accessor;
+import be.seeseemelk.jxe.Protection;
 import be.seeseemelk.jxe.types.BaseType;
 import be.seeseemelk.jxe.types.ClassImport;
 import be.seeseemelk.jxe.types.DecompiledClass;
@@ -98,7 +98,7 @@ class RecompilerClassVisitor extends ClassVisitor
 	@Override
 	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value)
 	{
-		classFields.add(new DecompiledField(BaseType.findType(descriptor).getValue0(), Accessor.fromAccessInt(access), name));
+		classFields.add(new DecompiledField(BaseType.findType(descriptor).getValue0(), Protection.fromProtectionInt(access), name));
 		return null;
 	}
 	
@@ -106,7 +106,7 @@ class RecompilerClassVisitor extends ClassVisitor
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions)
 	{
 		boolean isStatic = (access & Opcodes.ACC_STATIC) > 0;
-		var method = new DecompiledMethod(klass, name, descriptor, isStatic, Accessor.fromAccessInt(access));
+		var method = new DecompiledMethod(klass, name, descriptor, isStatic, Protection.fromProtectionInt(access));
 		return new RecompilerMethodVisitor(out, method, methods::add, generateHeader);
 	}
 	
@@ -162,7 +162,7 @@ class RecompilerClassVisitor extends ClassVisitor
 			printfln("class %s {", klass.getClassName());
 		else
 			printfln("class %s : public %s {", klass.getClassName(), superKlass.mangleName());
-		var accessor = Accessor.UNSPECIFIED;
+		var accessor = Protection.UNSPECIFIED;
 		
 		printfln("// Class fields");
 		for (var classField : classFields)
@@ -186,10 +186,10 @@ class RecompilerClassVisitor extends ClassVisitor
 				printfln("%s:", accessor.toString().toLowerCase());
 			}
 			
-			if (method.getName().equals("<init>"))
+			/*if (method.getName().equals("<init>"))
 				printfln("    %s(%s);", klass.getClassName(), method.getParameterDefinitions());
 			else
-				printfln("    %s;", method.getShortMethodDefinition());
+				printfln("    %s;", method.getShortMethodDefinition());*/
 		}
 		
 		printfln("};");

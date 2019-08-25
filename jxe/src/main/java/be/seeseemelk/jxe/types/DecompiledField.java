@@ -1,14 +1,14 @@
 package be.seeseemelk.jxe.types;
 
-import be.seeseemelk.jxe.Accessor;
+import be.seeseemelk.jxe.Protection;
 
 public class DecompiledField
 {
 	private final BaseType type;
-	private final Accessor accessor;
+	private final Protection accessor;
 	private final String name;
 	
-	public DecompiledField(BaseType type, Accessor accessor, String name)
+	public DecompiledField(BaseType type, Protection accessor, String name)
 	{
 		super();
 		this.type = type;
@@ -21,7 +21,7 @@ public class DecompiledField
 		return type;
 	}
 	
-	public Accessor getAccessor()
+	public Protection getAccessor()
 	{
 		return accessor;
 	}

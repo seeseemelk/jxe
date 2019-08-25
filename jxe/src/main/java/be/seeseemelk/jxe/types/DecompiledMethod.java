@@ -1,21 +1,31 @@
 package be.seeseemelk.jxe.types;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import be.seeseemelk.jxe.Accessor;
+import be.seeseemelk.jxe.Protection;
+import be.seeseemelk.jxe.codegen.JavaGenerator;
+import be.seeseemelk.jxe.discovery.Flag;
 
 public class DecompiledMethod
 {
 	private DecompiledClass owner;
 	private boolean staticMethod;
-	private final Accessor accessor;
+	private final Protection accessor;
 	private String name;
 	private BaseType returnType;
 	private List<BaseType> parameterTypes = new ArrayList<>();
 	private List<VariableType> parameterExpressions = new ArrayList<>();
+	private List<MethodReference> methodReferences = new ArrayList<>();
+	private Set<Flag> flags = EnumSet.noneOf(Flag.class);
+	private List<FieldAccess> fieldAccesses = new ArrayList<>();
 	
-	public DecompiledMethod(DecompiledClass owner, String name, String descriptor, boolean staticMethod, Accessor accessor)
+	public DecompiledMethod(DecompiledClass owner, String name, String descriptor, boolean staticMethod, Protection accessor)
 	{
 		this.owner = owner;
 		this.name = name;
@@ -41,11 +51,6 @@ public class DecompiledMethod
 		return returnType;
 	}
 	
-	/*public void setStaticMethod(boolean staticMethod)
-	{
-		this.staticMethod = staticMethod;
-	}*/
-	
 	public boolean isStaticMethod()
 	{
 		return staticMethod;
@@ -53,7 +58,6 @@ public class DecompiledMethod
 	
 	public String mangleShortName()
 	{
-		//return name.replace("<", "__").replace(">", "__");
 		return name;
 	}
 	
@@ -80,7 +84,7 @@ public class DecompiledMethod
 			return "";
 	}
 	
-	public String getShortMethodDefinition()
+	/*public String getShortMethodDefinition()
 	{
 		var builder = new StringBuilder(getModifiers());
 		builder.append(getReturnType().mangleType() + " " + mangleShortName() + "(");
@@ -89,9 +93,9 @@ public class DecompiledMethod
 		
 		builder.append(")");
 		return builder.toString();
-	}
+	}*/
 
-	public String getLongMethodDefinition()
+	/*public String getLongMethodDefinition()
 	{
 		var builder = new StringBuilder();
 		builder.append(getReturnType().mangleType() + " " + mangleLongName() + "(");
@@ -100,9 +104,9 @@ public class DecompiledMethod
 		
 		builder.append(")");
 		return builder.toString();
-	}
+	}*/
 	
-	public String getParameterDefinitions()
+	/*public String getParameterDefinitions()
 	{
 		if (parameterTypes.isEmpty())
 			return "";
@@ -115,7 +119,7 @@ public class DecompiledMethod
 			}
 			return String.join(", ", parameters);
 		}
-	}
+	}*/
 	
 	private void parseDescriptor(String descriptor)
 	{
@@ -134,12 +138,6 @@ public class DecompiledMethod
 		int end = descriptor.lastIndexOf(')');
 		if (end > 1)
 		{
-			/*var parameters = descriptor.substring(1, end);
-			for (var parameter : parameters.split(";"))
-			{
-				parameterTypes.add(BaseType.findType(parameter));
-				parameterExpressions.add(new VariableType("v" + parameterExpressions.size()));
-			}*/
 			for (var parameter : BaseType.findTypes(descriptor.substring(1, end)))
 			{
 				parameterTypes.add(parameter);
@@ -148,12 +146,12 @@ public class DecompiledMethod
 		}
 	}
 	
-	public String asNamedPointer()
+	/*public String asNamedPointer()
 	{
 		return String.format("%s(*%s)(%s)", getReturnType().mangleType(), mangleLongName(), getParameterDefinitions());
-	}
+	}*/
 	
-	public Accessor getAccessor()
+	public Protection getAccessor()
 	{
 		return accessor;
 	}
@@ -161,7 +159,51 @@ public class DecompiledMethod
 	public boolean isMain()
 	{
 		return staticMethod &&
-				accessor == Accessor.PUBLIC &&
+				accessor == Protection.PUBLIC &&
 				name.equals("main");
 	}
+	
+	public void addMethodReference(MethodReference reference)
+	{
+		methodReferences.add(reference);
+	}
+	
+	public Collection<MethodReference> getMethodReferences()
+	{
+		return Collections.unmodifiableCollection(methodReferences);
+	}
+	
+	public boolean hasFlag(Flag flag)
+	{
+		return flags.contains(flag);
+	}
+	
+	public void addFlag(Flag flag)
+	{
+		flags.add(flag);
+	}
+	
+	public void addFieldAccess(FieldAccess fieldAccess)
+	{
+		fieldAccesses.add(fieldAccess);
+	}
+	
+	public Collection<FieldAccess> getFieldAccesses()
+	{
+		return Collections.unmodifiableCollection(fieldAccesses);
+	}
+	
+	@Override
+	public String toString()
+	{
+		return JavaGenerator.generateFullFQNMethodDefinition(this);
+	}
 }
+
+
+
+
+
+
+
+

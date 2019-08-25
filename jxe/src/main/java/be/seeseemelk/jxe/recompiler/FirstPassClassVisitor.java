@@ -17,7 +17,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import be.seeseemelk.jxe.Accessor;
+import be.seeseemelk.jxe.Protection;
 import be.seeseemelk.jxe.types.ClassImport;
 import be.seeseemelk.jxe.types.DecompiledClass;
 import be.seeseemelk.jxe.types.DecompiledMethod;
@@ -103,7 +103,7 @@ public class FirstPassClassVisitor extends ClassVisitor
 			return null;
 		
 		boolean isStatic = (access & Opcodes.ACC_STATIC) > 0;
-		var method = new DecompiledMethod(klass, name, descriptor, isStatic, Accessor.fromAccessInt(access));
+		var method = new DecompiledMethod(klass, name, descriptor, isStatic, Protection.fromProtectionInt(access));
 		
 		if (method.getReturnType() instanceof DecompiledClass)
 		{

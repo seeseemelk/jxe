@@ -2,11 +2,12 @@ package be.seeseemelk.testapp;
 
 import be.seeseemelk.jxe.api.Include;
 import be.seeseemelk.jxe.api.JXE;
+import be.seeseemelk.jxe.api.Pure;
 
 @Include("stdio.h")
 public class TestApp
 {
-	//private static int myProperty = 2;
+	private static int myProperty = 2;
 	public int a = 2;
 	public int b = 3;
 	private int c = 4;
@@ -46,6 +47,24 @@ public class TestApp
 			return false;
 	}
 	
+	public static int factorial2b(int n)
+	{
+		if (n == 1)
+			return n;
+		else
+			return n * factorial2b(n - 1);
+	}
+	
+	@Pure
+	public static int factorial2a(int n)
+	{
+		if (n == 1)
+			return n;
+		else
+			return n * factorial2b(n - 1);
+	}
+	
+	@Pure
 	public static int factorial(int n)
 	{
 		if (n == 1)
