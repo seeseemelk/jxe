@@ -57,7 +57,10 @@ public class MethodDiscoverer extends MethodVisitor
 	public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface)
 	{
 		var reference = new MethodReference(getFilePosition(), owner, name, Type.getMethodType(descriptor));
-		partial.addMethodReference(reference);
+		if (!reference.getMethodName().equals("<init>") || !reference.getClassReference().getClassFQN().equals("java/lang/Object"))
+		{
+			partial.addMethodReference(reference);	
+		}
 	}
 	
 	@Override

@@ -85,43 +85,6 @@ public class DecompiledMethod
 			return "";
 	}
 	
-	/*public String getShortMethodDefinition()
-	{
-		var builder = new StringBuilder(getModifiers());
-		builder.append(getReturnType().mangleType() + " " + mangleShortName() + "(");
-		
-		builder.append(getParameterDefinitions());
-		
-		builder.append(")");
-		return builder.toString();
-	}*/
-
-	/*public String getLongMethodDefinition()
-	{
-		var builder = new StringBuilder();
-		builder.append(getReturnType().mangleType() + " " + mangleLongName() + "(");
-		
-		builder.append(getParameterDefinitions());
-		
-		builder.append(")");
-		return builder.toString();
-	}*/
-	
-	/*public String getParameterDefinitions()
-	{
-		if (parameterTypes.isEmpty())
-			return "";
-		else
-		{
-			var parameters = new String[parameterTypes.size()];
-			for (int i = 0; i < parameterTypes.size(); i++)
-			{
-				parameters[i] = parameterTypes.get(i).mangleType() + " " + parameterExpressions.get(i).asValue();
-			}
-			return String.join(", ", parameters);
-		}
-	}*/
-	
 	private void parseDescriptor(String descriptor)
 	{
 		int start = descriptor.lastIndexOf(')') + 1;

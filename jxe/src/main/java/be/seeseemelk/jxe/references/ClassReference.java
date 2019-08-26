@@ -19,7 +19,7 @@ public class ClassReference
 	@Override
 	public String toString()
 	{
-		return classFQN;
+		return classFQN.replace('/', '.');
 	}
 
 	@Override

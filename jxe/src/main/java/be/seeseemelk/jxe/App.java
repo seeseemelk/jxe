@@ -10,6 +10,7 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import be.seeseemelk.jxe.discovery.Library;
+import be.seeseemelk.jxe.discovery.MethodScanner;
 import be.seeseemelk.jxe.rules.PureRule;
 import be.seeseemelk.jxe.rules.RuleCheckerMethodException;
 
@@ -61,7 +62,6 @@ public class App
 		{
 			var library = new Library();
 			zip.stream()
-				.filter(entry -> entry.getName().startsWith("classes/"))
 				.filter(entry -> entry.getName().endsWith(".class"))
 				.filter(entry -> !entry.isDirectory())
 				.forEach(entry -> {
@@ -74,6 +74,8 @@ public class App
 						throw new RuntimeException(e);
 					}
 				});
+			
+			var scanner = new MethodScanner(library);
 		}
 		/*.forEach(entry -> {
 			System.out.println(entry.getName());
@@ -92,6 +94,7 @@ public class App
 			{
 				case "--pure-jar" -> {
 					autoDetectPureness(Paths.get("/usr/lib/jvm/java-12-openjdk/jmods/java.base.jmod"));
+					//autoDetectPureness(Paths.get("/home/seeseemelk/dev/jxe/input_class.jar"));
 				}
 			}
 		}

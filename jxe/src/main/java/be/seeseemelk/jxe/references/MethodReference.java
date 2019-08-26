@@ -49,7 +49,7 @@ public class MethodReference
 	@Override
 	public String toString()
 	{
-		return String.format("%s/%s", classReference.toString(), getMethodName());
+		return String.format("%s#%s", classReference.toString(), getMethodName());
 	}
 
 	@Override
