@@ -10,9 +10,11 @@ import java.util.Optional;
 import java.util.Set;
 
 import be.seeseemelk.jxe.references.ClassReference;
+import be.seeseemelk.jxe.references.FieldReference;
 import be.seeseemelk.jxe.references.MethodReference;
 import be.seeseemelk.jxe.rules.BaseRule;
 import be.seeseemelk.jxe.types.DecompiledClass;
+import be.seeseemelk.jxe.types.DecompiledField;
 import be.seeseemelk.jxe.types.DecompiledMethod;
 
 public class Library
@@ -84,6 +86,15 @@ public class Library
 				.flatMap(klass -> 
 					klass.getMethods().stream().filter(method -> method.getName().equals(reference.getMethodName())).findAny()
 				);
+	}
+	
+	public Optional<DecompiledField> findField(FieldReference reference)
+	{
+		return findClass(reference.getClassReference())
+				.flatMap(klass ->
+						klass.getFields().stream()
+						.filter(field -> field.getName().equals(reference.getPropertyName()))
+						.findAny());
 	}
 }
 

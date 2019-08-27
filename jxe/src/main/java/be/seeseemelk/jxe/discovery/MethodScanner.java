@@ -1,18 +1,24 @@
 
 package be.seeseemelk.jxe.discovery;
 
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import be.seeseemelk.jxe.ANSI;
+import be.seeseemelk.jxe.ClassInfoStore;
 import be.seeseemelk.jxe.references.MethodReference;
+import be.seeseemelk.jxe.types.DecompiledClass;
 import be.seeseemelk.jxe.types.DecompiledMethod;
 import be.seeseemelk.jxe.types.VariableAccess.Action;
 
 public class MethodScanner
 {
 	//private Consumer<DecompiledMethod> consumer;
+	private final Library library;
 	private List<DecompiledMethod> methods;
 	private List<DecompiledMethod> checkedMethods = new LinkedList<>();
 	private List<DecompiledMethod> pureMethods = new LinkedList<>();
@@ -24,6 +30,7 @@ public class MethodScanner
 	
 	public MethodScanner(Library library)
 	{
+		this.library = library;
 		methods = library.getClasses().stream()
 				.flatMap(klass -> klass.getMethods().stream())
 				.collect(Collectors.toList());
@@ -35,7 +42,7 @@ public class MethodScanner
 				if (library.findMethod(ref).isEmpty())
 				{
 					System.err.println("Unresolved method " + ref.toString());
-					//return;
+					return;
 				}
 			}
 		}
@@ -63,6 +70,20 @@ public class MethodScanner
 				}
 			}
 		}
+		
+		var store = new ClassInfoStore(Paths.get("data"));
+		try
+		{
+			for (var methods : checkedMethods)
+			{
+				System.out.println(methods.toString());
+				store.storeClass(methods.getOwner());
+			}
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 	
 	private Result check(DecompiledMethod method)
@@ -81,7 +102,11 @@ public class MethodScanner
 		{
 			if (access.getAction() == Action.WRITE)
 			{
-				return Result.REJECT;
+				var field = library.findField(access.getReference());
+				if (field.isEmpty() || !field.get().isFinal())
+				{
+					return Result.REJECT;
+				}
 			}
 		}
 		

@@ -1,5 +1,9 @@
 package be.seeseemelk.jxe.types;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,6 +15,7 @@ public class DecompiledClass implements BaseType
 	private final String fullyQualifiedName;
 	private final Optional<DecompiledClass> parent;
 	private final List<DecompiledMethod> methods = new ArrayList<>();
+	private final List<DecompiledField> fields = new ArrayList<>();
 	
 	/**
 	 * Creates a decompiled class with a parent.
@@ -66,25 +71,25 @@ public class DecompiledClass implements BaseType
 	
 	public String mangleName()
 	{
-		return fullyQualifiedName.replace("/", "::");
+		return fullyQualifiedName.replace('/', '.');
 	}
 	
 	public String[] getNameParts()
 	{
-		return mangleName().split("::");
+		return mangleName().split(".");
 	}
 	
 	public String[] getNamespaceParts()
 	{
 		var mangled = mangleName();
-		int lastIndex = mangled.lastIndexOf("::");
-		return mangled.substring(0, lastIndex).split("::");
+		int lastIndex = mangled.lastIndexOf('.');
+		return mangled.substring(0, lastIndex).split(".");
 	}
 	
 	@Override
 	public String mangleType()
 	{
-		return mangleName() + "*";
+		return mangleName();
 	}
 	
 	public Optional<DecompiledClass> getParent()
@@ -105,6 +110,16 @@ public class DecompiledClass implements BaseType
 	public List<DecompiledMethod> getMethods()
 	{
 		return Collections.unmodifiableList(methods);
+	}
+	
+	public void addField(DecompiledField field)
+	{
+		fields.add(field);
+	}
+	
+	public List<DecompiledField> getFields()
+	{
+		return Collections.unmodifiableList(fields);
 	}
 	
 	@Override

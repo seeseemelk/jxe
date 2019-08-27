@@ -93,8 +93,8 @@ public class App
 			switch (args[0])
 			{
 				case "--pure-jar" -> {
-					autoDetectPureness(Paths.get("/usr/lib/jvm/java-12-openjdk/jmods/java.base.jmod"));
-					//autoDetectPureness(Paths.get("/home/seeseemelk/dev/jxe/input_class.jar"));
+					//autoDetectPureness(Paths.get("/usr/lib/jvm/java-12-openjdk/jmods/java.base.jmod"));
+					autoDetectPureness(Paths.get("/home/seeseemelk/dev/jxe/input_class.jar"));
 				}
 			}
 		}

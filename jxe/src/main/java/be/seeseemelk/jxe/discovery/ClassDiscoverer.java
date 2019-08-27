@@ -8,11 +8,14 @@ import java.util.Optional;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import be.seeseemelk.jxe.Protection;
+import be.seeseemelk.jxe.types.BaseType;
 import be.seeseemelk.jxe.types.DecompiledClass;
+import be.seeseemelk.jxe.types.DecompiledField;
 import be.seeseemelk.jxe.types.DecompiledMethod;
 
 public class ClassDiscoverer extends ClassVisitor
@@ -44,6 +47,18 @@ public class ClassDiscoverer extends ClassVisitor
 		}
 		
 		System.out.format("CLASS %s%n", optionalPartial.get().getFullyQualifiedName());
+	}
+	
+	@Override
+	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value)
+	{
+		if (optionalPartial.isEmpty())
+			return null;
+		var partial = optionalPartial.get();
+		
+		partial.addField(new DecompiledField(BaseType.findType(descriptor).getValue0(), access, name));
+		
+		return null;
 	}
 	
 	@Override

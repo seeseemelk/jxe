@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -15,7 +14,7 @@ import be.seeseemelk.jxe.references.MethodReference;
 
 public class DecompiledMethod
 {
-	private DecompiledClass owner;
+	private transient DecompiledClass owner;
 	private boolean staticMethod;
 	private final Protection accessor;
 	private String name;
@@ -95,7 +94,9 @@ public class DecompiledMethod
 	{
 		if (!isStaticMethod() && !name.equals("<init>"))
 		{
-			parameterTypes.add(new InternalType(owner.mangleType()));
+			/*parameterTypes.add(new InternalType(owner.mangleType()));
+			parameterExpressions.add(new VariableType("v" + parameterExpressions.size()));*/
+			parameterTypes.add(new InternalType("this"));
 			parameterExpressions.add(new VariableType("v" + parameterExpressions.size()));
 		}
 

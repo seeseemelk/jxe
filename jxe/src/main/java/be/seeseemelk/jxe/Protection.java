@@ -25,4 +25,9 @@ public enum Protection
 	{
 		return (access & Opcodes.ACC_STATIC) > 0;
 	}
+	
+	public static boolean isFinal(int access)
+	{
+		return (access & Opcodes.ACC_FINAL) > 0;
+	}
 }

@@ -1,5 +1,8 @@
 package be.seeseemelk.jxe.types;
 
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Optional;
 
 public class PrimitiveType implements BaseType
@@ -90,5 +93,11 @@ public class PrimitiveType implements BaseType
 	public String asValue()
 	{
 		return value.get();
+	}
+	
+	@Override
+	public String toString()
+	{
+		return mangleType();
 	}
 }

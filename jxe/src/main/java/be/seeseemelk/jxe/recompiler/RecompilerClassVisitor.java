@@ -98,7 +98,7 @@ class RecompilerClassVisitor extends ClassVisitor
 	@Override
 	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value)
 	{
-		classFields.add(new DecompiledField(BaseType.findType(descriptor).getValue0(), Protection.fromProtectionInt(access), name));
+		classFields.add(new DecompiledField(BaseType.findType(descriptor).getValue0(), access, name));
 		return null;
 	}
 	
