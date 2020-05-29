@@ -37,6 +37,5 @@ bin/
 # Ignore Gradle build output directory
 build
 bak
-input
 jtsc_output/
 server_input/
