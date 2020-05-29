@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/j4dlang
+j4dlang.so
+j4dlang.dylib
+j4dlang.dll
+j4dlang.a
+j4dlang.lib
+j4dlang-test-*
+*.exe
+*.o
+*.obj
+*.lst

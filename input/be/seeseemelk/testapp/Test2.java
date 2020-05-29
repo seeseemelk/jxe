@@ -3,7 +3,7 @@ package be.seeseemelk.testapp;
 public class Test2
 {
 	//private static int myProperty = 2;
-	public int a = 2;
+	/*public int a = 2;
 	public int b = 3;
 	private int c = 4;
 	
@@ -13,12 +13,12 @@ public class Test2
 		int b = 6 + 6;
 		return a * b;
 	}
-	
+	*/
 	public int myMethod()
 	{
 		return 2;
 	}
-	
+	/*
 	public final int myFinalMethod()
 	{
 		return 3;
@@ -53,6 +53,6 @@ public class Test2
 	public static int createOne()
 	{
 		return new Test2().a;
-	}
+	}*/
 
 }

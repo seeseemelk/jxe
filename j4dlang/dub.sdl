@@ -1,0 +1,5 @@
+name "j4dlang"
+description "A library implementing some of Java's libraries in D"
+authors "Sebastiaan de Schaetzen"
+copyright "Copyright © 2020, Sebastiaan de Schaetzen"
+license "LGPLv2"

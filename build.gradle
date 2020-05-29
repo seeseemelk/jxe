@@ -3,38 +3,46 @@
  *
  * This generated file contains a sample Java project to get you started.
  * For more details take a look at the Java Quickstart chapter in the Gradle
- * User Manual available at https://docs.gradle.org/5.4.1-20190522110022+0000/userguide/tutorial_java_projects.html
+ * User Manual available at https://docs.gradle.org/6.3/userguide/tutorial_java_projects.html
  */
 
-allprojects {
-	apply plugin: 'java'
+plugins {
+    // Apply the java plugin to add support for Java
+    id 'java'
+
+    // Apply the application plugin to add support for building a CLI application.
+    id 'application'
 }
 
-subprojects {
-	repositories {
-		// Use jcenter for resolving your dependencies.
-		// You can declare any Maven/Ivy/file repository here.
-		jcenter()
-	}
+repositories {
+    // Use jcenter for resolving dependencies.
+    // You can declare any Maven/Ivy/file repository here.
+    jcenter()
+}
 
-	dependencies {
-		// This dependency is found on compile classpath of this component and consumers.
-		implementation 'com.google.guava:guava:27.0.1-jre'
-		implementation 'org.javatuples:javatuples:1.2'
-		
-		implementation 'org.ow2.asm:asm:7.1'
-		implementation 'org.ow2.asm:asm-tree:7.1'
+dependencies {
+    implementation 'com.google.guava:guava:28.2-jre'
+	implementation 'org.ow2.asm:asm:8.0.1'
+	implementation 'org.ow2.asm:asm-tree:8.0.1'
 
-		// Use JUnit test framework
-		testImplementation 'junit:junit:4.12'
-	}
+    // Use JUnit Jupiter API for testing.
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
 
-	java {
-		sourceCompatibility = JavaVersion.VERSION_12
-		targetCompatibility = JavaVersion.VERSION_12
-	}
+    // Use JUnit Jupiter Engine for testing.
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+}
 
-	tasks.withType(JavaCompile) {
-		it.options.compilerArgs.add('--enable-preview')
-	}
+java {
+	sourceCompatibility = JavaVersion.VERSION_13
+	targetCompatibility = JavaVersion.VERSION_13
+}
+
+application {
+    // Define the main class for the application.
+    mainClassName = 'be.seeseemelk.jtsc.App'
+}
+
+test {
+    // Use junit platform for unit tests
+    useJUnitPlatform()
 }

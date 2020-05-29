@@ -33,3 +33,10 @@ bin/
 # Directories to ignore
 /input_class
 /output
+
+# Ignore Gradle build output directory
+build
+bak
+input
+jtsc_output/
+server_input/
