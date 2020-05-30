@@ -87,7 +87,7 @@ public class DMethodVisitor extends MethodVisitor
 	
 	public void setFromAccess(int access)
 	{
-		setStatic((access & Opcodes.ACC_STATIC) != 0);
+		setStatic(Utils.isStatic(access));
 		setVisibility(Visibility.fromAccess(access));
 	}
 	
@@ -283,7 +283,7 @@ public class DMethodVisitor extends MethodVisitor
 	public void visitFieldInsn(int opcode, String owner, String name, String descriptor)
 	{
 		owner = Utils.getClassName(owner);
-		name = Utils.replaceReserved(name);
+		name = Utils.identifierToD(name);
 		switch (opcode)
 		{
 			case Opcodes.GETSTATIC:

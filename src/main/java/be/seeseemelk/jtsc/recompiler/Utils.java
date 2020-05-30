@@ -26,15 +26,16 @@ public class Utils
 		return fqn.substring(index + 1);
 	}
 	
-	public static String replaceReserved(String text)
+	public static String identifierToD(String text)
 	{
 		switch (text)
 		{
 			case "out":
 				return "_out";
-			default:
-				return text;
 		}
+		
+		return text
+				.replace("$", "_DOLLAR_");
 	}
 	
 	public static String accessorToString(int accessor)
@@ -71,5 +72,10 @@ public class Utils
 	{
 		var base = name.substring(1);
 		return typeToName(base) + "[]";
+	}
+	
+	public static boolean isStatic(int accessor)
+	{
+		return (accessor & Opcodes.ACC_STATIC) != 0;
 	}
 }

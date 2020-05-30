@@ -4,12 +4,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+
+import be.seeseemelk.jtsc.types.Visibility;
 
 public class DClassVisitor extends ClassVisitor
 {
@@ -69,6 +74,44 @@ public class DClassVisitor extends ClassVisitor
 		{
 			throw new RuntimeException(e);
 		}
+	}
+	
+	@Override
+	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value)
+	{
+		List<String> keywords = new ArrayList<>();
+		
+		switch (Visibility.fromAccess(access))
+		{
+			case PACKAGE:
+				System.err.println("Visibility of PACKAGE is not supported, using PUBLIC instead");
+			case PUBLIC:
+				keywords.add("public ");
+				break;
+			case PROTECTED:
+				keywords.add("protected ");
+				break;
+			case PRIVATE:
+				keywords.add("private ");
+				break;
+		}
+		
+		if (Utils.isStatic(access))
+			keywords.add("static ");
+		
+		keywords.add(Utils.typeToName(descriptor));
+		keywords.add(" ");
+		keywords.add(Utils.identifierToD(name));
+		
+		if (value != null)
+		{
+			keywords.add(" = ");
+			keywords.add(value.toString());
+		}
+		keywords.add(";");
+		
+		writer.writelnUnsafe(String.join("", keywords));
+		return null;
 	}
 	
 	@Override
