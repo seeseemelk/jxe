@@ -1,7 +1,6 @@
 package be.seeseemelk.jtsc.recompiler;
 
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 public class Utils
 {
@@ -17,24 +16,33 @@ public class Utils
 	
 	public static String getClassName(String fqn)
 	{
-		if (fqn.replace('/', '.').equals("java.lang.Object"))
+		String identifier = asDIdentifier(fqn);
+		if (identifier.equals("java.lang.Object"))
 			return "_Object";
 		
-		int index = fqn.lastIndexOf('/');
-		if (index == -1)
-			index = fqn.lastIndexOf('.');
-		return fqn.substring(index + 1);
+		int index = identifier.lastIndexOf('.');
+		return identifier.substring(index + 1);
 	}
 	
-	public static String replaceReserved(String text)
+	public static String asDIdentifier(String text)
 	{
-		switch (text)
+		String[] parts = text.replace('/', '.').split("\\.");
+		for (int i = 0; i < parts.length; i++)
 		{
-			case "out":
-				return "_out";
-			default:
-				return text;
+			String part = parts[i];
+			switch (part)
+			{
+				case "out":
+					part = "_out";
+					break;
+				case "in":
+					part = "_in";
+					break;
+			}
+			parts[i] = part;
 		}
+		return String.join(".", parts)
+				.replace("$", "_DOLLAR_");
 	}
 	
 	public static String accessorToString(int accessor)
@@ -63,7 +71,8 @@ public class Utils
 			case 'I': return "int";
 			case '[': return arrayTypeToName(name);
 			case 'L': return name.substring(1, name.length() - 1).replace('/', '.');
-			default: throw new RuntimeException("Unknown type " + name);
+			default: return name;
+			//default: throw new RuntimeException("Unknown type " + name);
 		}
 	}
 	

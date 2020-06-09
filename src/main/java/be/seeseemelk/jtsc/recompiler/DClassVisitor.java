@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.LinkedList;
 import java.util.Set;
 
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+
+import be.seeseemelk.jtsc.types.Visibility;
 
 public class DClassVisitor extends ClassVisitor
 {
@@ -64,6 +68,8 @@ public class DClassVisitor extends ClassVisitor
 			
 			writer.writeln(Utils.accessorToString(access), " class ", className, " : ", superClassName, " {");
 			writer.indent();
+			writer.writeln("mixin autoReflector!" + className + ";");
+			writer.writeln();
 		}
 		catch (IOException e)
 		{
@@ -79,6 +85,7 @@ public class DClassVisitor extends ClassVisitor
 		visitor.setName(name);
 		visitor.setReturnType(Utils.typeToName(Type.getReturnType(descriptor).toString()));
 		visitor.setArguments(Type.getArgumentTypes(descriptor));
+		visitor.setClassName(className);
 		
 		if (visitor.isStatic() && name.equals("main"))
 		{
@@ -86,6 +93,42 @@ public class DClassVisitor extends ClassVisitor
 		}
 		
 		return visitor;
+	}
+	
+	@Override
+	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value)
+	{
+		LinkedList<String> keywords = new LinkedList<>();
+		
+		Visibility visibility = Visibility.fromAccess(access);
+		switch (visibility)
+		{
+			case PACKAGE:
+				System.out.println("PACKAGE visibility not supported, using PUBLIC");
+			case PUBLIC:
+				keywords.add("public ");
+				break;
+			case PROTECTED:
+				keywords.add("protected ");
+				break;
+			case PRIVATE:
+				keywords.add("private ");
+				break;
+		}
+		
+		if ((access & Opcodes.ACC_STATIC) > 0)
+		{
+			keywords.add("static ");
+		}
+		
+		keywords.add(Utils.typeToName(descriptor));
+		keywords.add(" ");
+		keywords.add(Utils.asDIdentifier(name));
+		keywords.add(";");
+		
+		writer.writelnUnsafe(String.join("", keywords));
+		
+		return null;
 	}
 	
 	@Override
@@ -98,9 +141,10 @@ public class DClassVisitor extends ClassVisitor
 			
 			if (hasMain)
 			{
+				writer.writeln();
 				writer.writeln("void main(string[] args) {");
 				writer.indent();
-				writer.writeln(className + ".main();");
+				writer.writeln(className + ".main(String.fromArray(args));");
 				writer.undent();
 				writer.writeln("}");
 			}

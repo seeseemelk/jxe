@@ -16,6 +16,7 @@ import org.objectweb.asm.Opcodes;
 public class ImportFinder extends ClassVisitor
 {
 	private Set<String> imports = new TreeSet<>();
+	private Set<String> excludes = new TreeSet<>();
 	
 	private class MethodImportFinder extends MethodVisitor
 	{
@@ -44,6 +45,7 @@ public class ImportFinder extends ClassVisitor
 	 */
 	public Set<String> getImports()
 	{
+		imports.removeAll(excludes);
 		return Collections.unmodifiableSet(imports);
 	}
 	
@@ -56,6 +58,7 @@ public class ImportFinder extends ClassVisitor
 	@Override
 	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
 	{
-		imports.add(superName.replace('/', '.'));
+		imports.add(Utils.asDIdentifier(superName));
+		excludes.add(Utils.asDIdentifier(name));
 	}
 }

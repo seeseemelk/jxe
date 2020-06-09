@@ -39,3 +39,6 @@ build
 bak
 jtsc_output/
 server_input/
+
+# D files
+*.a

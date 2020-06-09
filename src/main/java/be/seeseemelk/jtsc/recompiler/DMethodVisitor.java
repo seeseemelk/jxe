@@ -22,6 +22,7 @@ public class DMethodVisitor extends MethodVisitor
 	private boolean isStatic = false;
 	private Visibility visibility;
 	private String name;
+	private String className;
 	private String returnType;
 	private List<String> arguments = Collections.emptyList();
 	private int extraLocal = 0;
@@ -60,6 +61,16 @@ public class DMethodVisitor extends MethodVisitor
 	public String getName()
 	{
 		return this.name;
+	}
+	
+	public void setClassName(String name)
+	{
+		className = name;
+	}
+	
+	public String getClassName()
+	{
+		return className;
 	}
 	
 	public void setReturnType(String returnType)
@@ -129,11 +140,12 @@ public class DMethodVisitor extends MethodVisitor
 		keywords.add("(");
 		
 		int argCount = 0;
+		int offset = isStatic() ? 0 : 1;
 		for (var arg : arguments)
 		{
-			keywords.add(arg);
+			keywords.add(Utils.getClassName(arg));
 			keywords.add(" ");
-			keywords.add(getVar(argCount));
+			keywords.add(getVar(argCount + offset));
 			argCount++;
 			if (argCount < arguments.size())
 				keywords.add(", ");
@@ -283,7 +295,7 @@ public class DMethodVisitor extends MethodVisitor
 	public void visitFieldInsn(int opcode, String owner, String name, String descriptor)
 	{
 		owner = Utils.getClassName(owner);
-		name = Utils.replaceReserved(name);
+		name = Utils.asDIdentifier(name);
 		switch (opcode)
 		{
 			case Opcodes.GETSTATIC:
@@ -340,10 +352,13 @@ public class DMethodVisitor extends MethodVisitor
 			stack.push("new String(\"" + value + "\")");
 		else if (value instanceof Double)
 			stack.push(value.toString());
+		else if (value instanceof Integer)
+			stack.push(value.toString());
 		else if (value instanceof Float)
 			stack.push(value.toString() + "f");
 		else if (value instanceof Type)
-			stack.push("/*Unknown LDC of type 'Type' \"" + value + "\"*/");
+			//stack.push("/*Unknown LDC of type 'Type' \"" + value + "\"*/");
+			stack.push(Utils.typeToName(((Type) value).toString()) + "._class");
 		else
 			throw new UnsupportedOperationException("Unknown constant: (" + value.getClass().getSimpleName() + ") " + value);
 	}
@@ -356,30 +371,39 @@ public class DMethodVisitor extends MethodVisitor
 			case Opcodes.INVOKESPECIAL:
 				if ((opcode & Opcodes.ACC_SUPER) != 0)
 				{
-					// Remove pointer to 'this'
 					int argCount = Type.getArgumentTypes(descriptor).length;
-					List<String> keywords = new ArrayList<>();
-					keywords.add("super(");
+					LinkedList<String> keywords = new LinkedList<>();
+					LinkedList<String> arguments = new LinkedList<>();
 					for (int i = 0; i < argCount; i++)
 					{
-						keywords.add(stack.pop());
-						if (i + 1 < argCount)
-							keywords.add(", ");
+						arguments.push(stack.pop());
 					}
+					keywords.add("(");
+					keywords.add(String.join(", ", arguments));
 					keywords.add(")");
-					stack.pop(); // Pop 'this' reference
-					stack.push(String.join("", keywords));
+					String objectRef = stack.pop(); // Pop 'this' reference
+					if (objectRef.equals("this"))
+					{
+						keywords.push("super");
+					}
+					else
+					{
+						keywords.push(objectRef + " = new " + Utils.asDIdentifier(owner));
+					}
+					keywords.add(";");
+					String construction = String.join("", keywords);
+					writer.writelnUnsafe(construction);
 				}
 				else
 					throw new UnsupportedOperationException("Cannot perform INVOKESPECIAL without ACC_SUPER");
 				//writer.writelnUnsafe(variable + "." + name + "()");
 				break;
 			case Opcodes.INVOKEVIRTUAL:
-				invokeMethod(stack.pop(), name, descriptor);
+			case Opcodes.INVOKEINTERFACE:
+				invokeVirtualMethod(Utils.asDIdentifier(name), descriptor);
 				break;
 			case Opcodes.INVOKESTATIC:
-			case Opcodes.INVOKEINTERFACE:
-				invokeMethod(owner, name, descriptor);
+				invokeStaticMethod(Utils.asDIdentifier(owner), Utils.asDIdentifier(name), descriptor);
 				break;
 			default:
 				throw new UnsupportedOperationException("Unknown method: " + opcode + ", " + owner + ", " + name
@@ -387,10 +411,17 @@ public class DMethodVisitor extends MethodVisitor
 		}
 	}
 	
-	private void invokeMethod(String variable, String name, String descriptor)
+	private void invokeVirtualMethod(String name, String descriptor)
 	{
 		List<String> arguments = popFromStack(Type.getArgumentTypes(descriptor).length);
+		String variable = stack.pop();
 		stack.push(variable + "." + name + "(" + String.join(", ", arguments) + ")");
+	}
+	
+	private void invokeStaticMethod(String variable, String name, String descriptor)
+	{
+		List<String> arguments = popFromStack(Type.getArgumentTypes(descriptor).length);
+		stack.push(Utils.getClassName(variable) + "." + name + "(" + String.join(", ", arguments) + ")");
 	}
 	
 	@Override
@@ -399,7 +430,10 @@ public class DMethodVisitor extends MethodVisitor
 		switch (opcode)
 		{
 			case Opcodes.ALOAD:
-				stack.push(getVar(var));
+				if (var == 0 && !isStatic())
+					stack.push("this");
+				else
+					stack.push(getVar(var));
 				break;
 			case Opcodes.ILOAD:
 				stack.push(getVar(var));
@@ -426,13 +460,15 @@ public class DMethodVisitor extends MethodVisitor
 		switch (opcode)
 		{
 			case Opcodes.NEW:
-				stack.push("new " + type.replace('/', '.'));
+				doNew(type);
 				break;
 			case Opcodes.CHECKCAST:
+				stack.push("checkedCast!(" + Utils.typeToName(type) + ")(" + stack.pop() + ")");
 				break;
 			case Opcodes.INSTANCEOF:
 			case Opcodes.ANEWARRAY:
 				String local = getLocal();
+				//writer.writelnUnsafe("auto ", local, " = _Object.newArray(" + stack.pop() + ");");
 				writer.writelnUnsafe("auto ", local, " = new " + type + "[" + stack.pop() + "];");
 				stack.push(local);
 				break;
@@ -441,16 +477,29 @@ public class DMethodVisitor extends MethodVisitor
 		}
 	}
 	
+	private void doNew(String type)
+	{
+		type = Utils.asDIdentifier(type);
+		String var = getLocal();
+		writer.writelnUnsafe(type + " " + var + ";");
+		stack.push(var);
+	}
+	
 	/**
 	 * Writes the entirety of the stack as a statement.
 	 */
 	private void writeStackAsStatement()
 	{
+		if (stack.isEmpty())
+			return;
+		
+		writer.writelnUnsafe("// Start of stack dump");
 		while (!stack.isEmpty())
 		{
 			String statement = stack.remove();
 			writer.writelnUnsafe(statement, ";");
 		}
+		writer.writelnUnsafe("// End of stack dump");
 	}
 	
 	/**
@@ -460,10 +509,10 @@ public class DMethodVisitor extends MethodVisitor
 	 */
 	private List<String> popFromStack(int count)
 	{
-		List<String> items = new ArrayList<>();
+		LinkedList<String> items = new LinkedList<>();
 		while (count > 0)
 		{
-			items.add(stack.pop());
+			items.push(stack.pop());
 			count--;
 		}
 		return items;
