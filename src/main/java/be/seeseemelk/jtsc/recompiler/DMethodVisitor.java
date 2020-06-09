@@ -98,7 +98,7 @@ public class DMethodVisitor extends MethodVisitor
 	
 	public void setFromAccess(int access)
 	{
-		setStatic((access & Opcodes.ACC_STATIC) != 0);
+		setStatic(Utils.isStatic(access));
 		setVisibility(Visibility.fromAccess(access));
 	}
 	
@@ -295,7 +295,7 @@ public class DMethodVisitor extends MethodVisitor
 	public void visitFieldInsn(int opcode, String owner, String name, String descriptor)
 	{
 		owner = Utils.getClassName(owner);
-		name = Utils.asDIdentifier(name);
+		name = Utils.identifierToD(name);
 		switch (opcode)
 		{
 			case Opcodes.GETSTATIC:
@@ -388,7 +388,7 @@ public class DMethodVisitor extends MethodVisitor
 					}
 					else
 					{
-						keywords.push(objectRef + " = new " + Utils.asDIdentifier(owner));
+						keywords.push(objectRef + " = new " + Utils.identifierToD(owner));
 					}
 					keywords.add(";");
 					String construction = String.join("", keywords);
@@ -400,10 +400,10 @@ public class DMethodVisitor extends MethodVisitor
 				break;
 			case Opcodes.INVOKEVIRTUAL:
 			case Opcodes.INVOKEINTERFACE:
-				invokeVirtualMethod(Utils.asDIdentifier(name), descriptor);
+				invokeVirtualMethod(Utils.identifierToD(name), descriptor);
 				break;
 			case Opcodes.INVOKESTATIC:
-				invokeStaticMethod(Utils.asDIdentifier(owner), Utils.asDIdentifier(name), descriptor);
+				invokeStaticMethod(Utils.identifierToD(owner), Utils.identifierToD(name), descriptor);
 				break;
 			default:
 				throw new UnsupportedOperationException("Unknown method: " + opcode + ", " + owner + ", " + name
@@ -479,7 +479,7 @@ public class DMethodVisitor extends MethodVisitor
 	
 	private void doNew(String type)
 	{
-		type = Utils.asDIdentifier(type);
+		type = Utils.identifierToD(type);
 		String var = getLocal();
 		writer.writelnUnsafe(type + " " + var + ";");
 		stack.push(var);

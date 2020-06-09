@@ -58,7 +58,7 @@ public class ImportFinder extends ClassVisitor
 	@Override
 	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
 	{
-		imports.add(Utils.asDIdentifier(superName));
-		excludes.add(Utils.asDIdentifier(name));
+		imports.add(Utils.identifierToD(superName));
+		excludes.add(Utils.identifierToD(name));
 	}
 }

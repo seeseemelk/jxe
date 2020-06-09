@@ -20,7 +20,7 @@ public class App
 			System.err.printf("Arguments: <input directory> <output directory>%n");
 			System.exit(1);
 		}
-		//var inputDirectory = Paths.get("input_class");
+		
 		Path inputDirectory = Paths.get(args[0]);
 		Path outputDirectory = Paths.get(args[1]);
 		

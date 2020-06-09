@@ -16,7 +16,7 @@ public class Utils
 	
 	public static String getClassName(String fqn)
 	{
-		String identifier = asDIdentifier(fqn);
+		String identifier = identifierToD(fqn);
 		if (identifier.equals("java.lang.Object"))
 			return "_Object";
 		
@@ -24,7 +24,7 @@ public class Utils
 		return identifier.substring(index + 1);
 	}
 	
-	public static String asDIdentifier(String text)
+	public static String identifierToD(String text)
 	{
 		String[] parts = text.replace('/', '.').split("\\.");
 		for (int i = 0; i < parts.length; i++)
@@ -80,5 +80,10 @@ public class Utils
 	{
 		var base = name.substring(1);
 		return typeToName(base) + "[]";
+	}
+	
+	public static boolean isStatic(int accessor)
+	{
+		return (accessor & Opcodes.ACC_STATIC) != 0;
 	}
 }

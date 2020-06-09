@@ -4,7 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.objectweb.asm.ClassVisitor;
@@ -78,6 +79,44 @@ public class DClassVisitor extends ClassVisitor
 	}
 	
 	@Override
+	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value)
+	{
+		List<String> keywords = new ArrayList<>();
+		
+		switch (Visibility.fromAccess(access))
+		{
+			case PACKAGE:
+				System.err.println("Visibility of PACKAGE is not supported, using PUBLIC instead");
+			case PUBLIC:
+				keywords.add("public ");
+				break;
+			case PROTECTED:
+				keywords.add("protected ");
+				break;
+			case PRIVATE:
+				keywords.add("private ");
+				break;
+		}
+		
+		if (Utils.isStatic(access))
+			keywords.add("static ");
+		
+		keywords.add(Utils.typeToName(descriptor));
+		keywords.add(" ");
+		keywords.add(Utils.identifierToD(name));
+		
+		if (value != null)
+		{
+			keywords.add(" = ");
+			keywords.add(value.toString());
+		}
+		keywords.add(";");
+		
+		writer.writelnUnsafe(String.join("", keywords));
+		return null;
+	}
+	
+	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions)
 	{
 		var visitor = new DMethodVisitor(writer);
@@ -93,42 +132,6 @@ public class DClassVisitor extends ClassVisitor
 		}
 		
 		return visitor;
-	}
-	
-	@Override
-	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value)
-	{
-		LinkedList<String> keywords = new LinkedList<>();
-		
-		Visibility visibility = Visibility.fromAccess(access);
-		switch (visibility)
-		{
-			case PACKAGE:
-				System.out.println("PACKAGE visibility not supported, using PUBLIC");
-			case PUBLIC:
-				keywords.add("public ");
-				break;
-			case PROTECTED:
-				keywords.add("protected ");
-				break;
-			case PRIVATE:
-				keywords.add("private ");
-				break;
-		}
-		
-		if ((access & Opcodes.ACC_STATIC) > 0)
-		{
-			keywords.add("static ");
-		}
-		
-		keywords.add(Utils.typeToName(descriptor));
-		keywords.add(" ");
-		keywords.add(Utils.asDIdentifier(name));
-		keywords.add(";");
-		
-		writer.writelnUnsafe(String.join("", keywords));
-		
-		return null;
 	}
 	
 	@Override
