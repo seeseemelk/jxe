@@ -20,8 +20,9 @@ public final class InsnDecoder
 	
 	private static void visitNReturn(MethodState state) throws IOException
 	{
+		var value = state.popFromStack();
 		writeStackAsStatement(state);
-		state.getWriter().writeln("return ", state.popFromStack());
+		state.getWriter().writeln("return ", value, ";");
 	}
 	
 	/**
@@ -29,7 +30,8 @@ public final class InsnDecoder
 	 * any output as the stack should be empty. However, any incorrectly decompiled
 	 * instructions can cause the stack to still contain some data. This method will
 	 * make these errors easily visible.
-	 * @throws IOException 
+	 * 
+	 * @throws IOException
 	 */
 	private static final void writeStackAsStatement(MethodState state) throws IOException
 	{
@@ -44,7 +46,7 @@ public final class InsnDecoder
 		}
 		state.getWriter().writeln("// End of stack dump");
 	}
-
+	
 	private static void visitDup(MethodState state) throws IOException
 	{
 		var expression = state.popFromStack();
@@ -56,25 +58,26 @@ public final class InsnDecoder
 	{
 		doBinaryOperation(state, "&");
 	}
-
+	
 	private static void visitMul(MethodState state)
 	{
 		doBinaryOperation(state, "*");
 	}
-
+	
 	private static void visitSub(MethodState state)
 	{
 		doBinaryOperation(state, "-");
 	}
-
+	
 	private static void visitAdd(MethodState state)
 	{
 		doBinaryOperation(state, "+");
 	}
-
+	
 	/**
-	 * Performs a binary operation, taking the operands from the stack and
-	 * storing the result back onto the stack.
+	 * Performs a binary operation, taking the operands from the stack and storing
+	 * the result back onto the stack.
+	 * 
 	 * @param state
 	 * @param operation The symbol for the operation to perform.
 	 */
@@ -84,13 +87,13 @@ public final class InsnDecoder
 		var value1 = state.popFromStack();
 		state.pushToStack(value1 + ' ' + operation + ' ' + value2);
 	}
-
+	
 	private static void visitNeg(MethodState state)
 	{
 		var expression = state.popFromStack();
 		state.pushToStack("-" + expression);
 	}
-
+	
 	private static void visitD2F(MethodState state)
 	{
 		doCast(state, "float");
@@ -100,9 +103,10 @@ public final class InsnDecoder
 	{
 		doCast(state, "double");
 	}
-
+	
 	/**
 	 * Performs a type cast.
+	 * 
 	 * @param state
 	 * @param target The target type of the cast.
 	 */
@@ -110,22 +114,22 @@ public final class InsnDecoder
 	{
 		state.pushToStack("(cast(" + target + ")" + state.popFromStack() + ")");
 	}
-
+	
 	private static void visitPop(MethodState state)
 	{
 		state.popFromStack();
 	}
-
+	
 	private static void visitIConst(MethodState state, int value)
 	{
 		state.pushToStack(Integer.toString(value));
 	}
-
+	
 	private static void visitDConst(MethodState state, double value)
 	{
 		state.pushToStack(Double.toString(value));
 	}
-
+	
 	private static void visitAAStore(MethodState state) throws IOException
 	{
 		var value = state.popFromStack();
@@ -133,31 +137,31 @@ public final class InsnDecoder
 		var array = state.popFromStack();
 		state.getWriter().writeln(array, "[", index, "] = ", value, ";");
 	}
-
+	
 	private static void visitAALoad(MethodState state)
 	{
 		var index = state.popFromStack();
 		var array = state.popFromStack();
 		state.pushToStack(array + "[" + index + "]");
 	}
-
+	
 	private static void visitArrayLength(MethodState state)
 	{
 		var array = state.popFromStack();
 		state.pushToStack(array + ".length");
 	}
-
+	
 	private static void visitAConstNull(MethodState state)
 	{
 		state.pushToStack("null");
 	}
-
+	
 	private static void visitAThrow(MethodState state) throws IOException
 	{
 		var expression = state.popFromStack();
 		state.getWriter().writeln("throw " + expression);
 	}
-
+	
 	public static void visit(MethodState state, int opcode)
 	{
 		try
@@ -241,9 +245,9 @@ public final class InsnDecoder
 					throw new UnsupportedOperationException(String.format("Unknown method: 0x%02X", opcode));
 			}
 		}
-		catch (IOException e)
+		catch (Exception e)
 		{
-			throw new RuntimeException(e);
+			throw new RuntimeException(String.format("Exception occured while processing 0x%X", opcode), e);
 		}
 	}
 }

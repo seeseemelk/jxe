@@ -1,8 +1,12 @@
 package be.seeseemelk.jtsc.recompiler;
 
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+
+import org.objectweb.asm.Label;
 
 /**
  * Tracks the state of a method during decompilation. It is a vital part in
@@ -14,6 +18,8 @@ public class MethodState
 	private int nextLocalVariable = 0;
 	private final SourceWriter writer;
 	private boolean isStatic = false;
+	private Map<Label, String> labels = new HashMap<>();
+	private int nextLabelId = 0;
 	
 	public MethodState(SourceWriter writer)
 	{
@@ -118,5 +124,20 @@ public class MethodState
 	public void setMethodStatic(boolean isStatic)
 	{
 		this.isStatic = isStatic;
+	}
+	
+	/**
+	 * Gets the name of the label.
+	 * @param label The label object.
+	 * @return The name of the label.
+	 */
+	public String getLabelName(Label label)
+	{
+		if (labels.containsKey(label))
+			return labels.get(label);
+		
+		String name = "label" + nextLabelId++;
+		labels.put(label, name);
+		return name;
 	}
 }

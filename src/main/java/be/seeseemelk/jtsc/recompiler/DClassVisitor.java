@@ -35,7 +35,7 @@ public class DClassVisitor extends ClassVisitor
 	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces)
 	{
 		super.visit(version, access, name, signature, superName, interfaces);
-		System.out.println("Converting " + name);
+		System.out.println("CLASS " + name);
 	
 		try
 		{

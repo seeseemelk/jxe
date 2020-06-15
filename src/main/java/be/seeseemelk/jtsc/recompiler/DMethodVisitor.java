@@ -7,12 +7,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.TypePath;
 
 import be.seeseemelk.jtsc.recompiler.instructions.FieldInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.InsnDecoder;
+import be.seeseemelk.jtsc.recompiler.instructions.JumpInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.LdcInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.MethodInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.TypeInsnDecoder;
@@ -79,7 +85,6 @@ public class DMethodVisitor extends MethodVisitor
 	public void setReturnType(String returnType)
 	{
 		this.returnType = returnType;
-		System.out.println("Rettype = " + returnType);
 	}
 	
 	public void setVisibility(Visibility visibility)
@@ -108,6 +113,8 @@ public class DMethodVisitor extends MethodVisitor
 	@Override
 	public void visitCode()
 	{
+		System.out.println("METHOD " + getName());
+		
 		List<String> keywords = new ArrayList<>();
 		
 		if (!isStaticInitializer())
@@ -217,5 +224,145 @@ public class DMethodVisitor extends MethodVisitor
 	public void visitTypeInsn(int opcode, String type)
 	{
 		TypeInsnDecoder.visit(state, opcode, type);
+	}
+	
+	@Override
+	public void visitAnnotableParameterCount(int parameterCount, boolean visible)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public AnnotationVisitor visitAnnotationDefault()
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitAttribute(Attribute attribute)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitFrame(int type, int numLocal, Object[] local, int numStack, Object[] stack)
+	{
+		writer.writelnUnsafe("// Start of frame");
+	}
+	
+	@Override
+	public AnnotationVisitor visitInsnAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitIntInsn(int opcode, int operand)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitInvokeDynamicInsn(String name, String descriptor, Handle bootstrapMethodHandle,
+			Object... bootstrapMethodArguments)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitJumpInsn(int opcode, Label label)
+	{
+		JumpInsnDecoder.visit(state, opcode, label);
+	}
+	
+	@Override
+	public void visitLabel(Label label)
+	{
+		writer.writelnUnsafe(state.getLabelName(label) + ":");
+	}
+	
+	@Override
+	public void visitLineNumber(int line, Label start)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public AnnotationVisitor visitLocalVariableAnnotation(int typeRef, TypePath typePath, Label[] start, Label[] end,
+			int[] index, String descriptor, boolean visible)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitLookupSwitchInsn(Label dflt, int[] keys, Label[] labels)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitMaxs(int maxStack, int maxLocals)
+	{
+		super.visitMaxs(maxStack, maxLocals);
+	}
+	
+	@Override
+	public void visitMethodInsn(int opcode, String owner, String name, String descriptor)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitMultiANewArrayInsn(String descriptor, int numDimensions)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitParameter(String name, int access)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor, boolean visible)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitTableSwitchInsn(int min, int max, Label dflt, Label... labels)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public AnnotationVisitor visitTryCatchAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public void visitTryCatchBlock(Label start, Label end, Label handler, String type)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+	
+	@Override
+	public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible)
+	{
+		throw new UnsupportedOperationException("Not implemented");
 	}
 }
