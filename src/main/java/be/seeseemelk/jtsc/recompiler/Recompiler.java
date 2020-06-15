@@ -38,7 +38,7 @@ public class Recompiler
 		try (var writer = Files.newBufferedWriter(outputDirectory.resolve("dub.sdl"), StandardOpenOption.CREATE))
 		{
 			writer.append("name \"" + projectName + "\"\n");
-			writer.append("dependency \"j4dlang\" path=\"../j4dlang\"\n");
+			writer.append("dependency \"j4dlang\" version=\"*\"\n");
 		}
 	}
 }

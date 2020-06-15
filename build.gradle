@@ -42,7 +42,41 @@ application {
     mainClassName = 'be.seeseemelk.jtsc.App'
 }
 
+jar {
+	manifest {
+		attributes "Main-Class": "be.seeseemelk.jtsc.App"
+	}
+	
+	from {
+		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+	}
+}
+
 test {
     // Use junit platform for unit tests
     useJUnitPlatform()
+}
+
+task integration(group: "Verification", description: "Run integration tests") {
+	it.dependsOn jar
+	doLast {
+		exec {
+			workingDir "tests"
+			commandLine "make"
+		}
+	}
+}
+
+task dtest(group: "Verification", description: "Run j4dlang tests") {
+	doLast {
+		exec {
+			workingDir "j4dlang"
+			commandLine "dub", "test", "-q"
+		}
+	}
+}
+
+check {
+	it.dependsOn integration
+	it.dependsOn dtest
 }

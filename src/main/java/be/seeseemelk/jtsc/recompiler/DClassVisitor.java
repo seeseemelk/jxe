@@ -63,7 +63,10 @@ public class DClassVisitor extends ClassVisitor
 			
 			for (String toImport : imports)
 			{
-				writer.writeln("import ", toImport, ";");
+				if (toImport.equals("java.lang.Object"))
+					writer.writeln("import ", toImport, ";");
+				else
+					writer.writeln("import ", toImport, " : ", Utils.getClassName(toImport), ";");
 			}
 			writer.writeln();
 			
@@ -145,7 +148,7 @@ public class DClassVisitor extends ClassVisitor
 			if (hasMain)
 			{
 				writer.writeln();
-				writer.writeln("void main(string[] args) {");
+				writer.writeln("version(unittest) {} else void main(string[] args) {");
 				writer.indent();
 				writer.writeln(className + ".main(String.fromArray(args));");
 				writer.undent();

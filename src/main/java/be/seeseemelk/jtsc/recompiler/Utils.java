@@ -70,7 +70,7 @@ public class Utils
 			case 'Z': return "bool";
 			case 'I': return "int";
 			case '[': return arrayTypeToName(name);
-			case 'L': return name.substring(1, name.length() - 1).replace('/', '.');
+			case 'L': return getClassName(name.substring(1, name.length() - 1));
 			default: return name;
 			//default: throw new RuntimeException("Unknown type " + name);
 		}
