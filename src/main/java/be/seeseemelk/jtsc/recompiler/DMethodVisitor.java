@@ -13,6 +13,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import be.seeseemelk.jtsc.recompiler.instructions.InsnDecoder;
 import be.seeseemelk.jtsc.types.Visibility;
 
 public class DMethodVisitor extends MethodVisitor
@@ -25,12 +26,13 @@ public class DMethodVisitor extends MethodVisitor
 	private String className;
 	private String returnType;
 	private List<String> arguments = Collections.emptyList();
-	private int extraLocal = 0;
+	private final MethodState state;
 
 	public DMethodVisitor(SourceWriter writer)
 	{
 		super(Opcodes.ASM7);
 		this.writer = writer;
+		this.state = new MethodState(writer);
 	}
 	
 	public void setStatic(boolean isStatic)
@@ -140,12 +142,13 @@ public class DMethodVisitor extends MethodVisitor
 		keywords.add("(");
 		
 		int argCount = 0;
+		// Non-static functions have a 'this' parameter at index 0.
 		int offset = isStatic() ? 0 : 1;
 		for (var arg : arguments)
 		{
 			keywords.add(Utils.getClassName(arg));
 			keywords.add(" ");
-			keywords.add(getVar(argCount + offset));
+			keywords.add(state.getVariableName(argCount + offset));
 			argCount++;
 			if (argCount < arguments.size())
 				keywords.add(", ");
@@ -176,119 +179,7 @@ public class DMethodVisitor extends MethodVisitor
 	@Override
 	public void visitInsn(int opcode)
 	{
-		try
-		{
-			switch (opcode)
-			{
-				case Opcodes.RETURN:
-					writeStackAsStatement();
-					writer.writeln("return;");
-					break;
-				case Opcodes.IRETURN:
-				case Opcodes.LRETURN:
-				case Opcodes.FRETURN:
-				case Opcodes.DRETURN:
-				case Opcodes.ARETURN:
-					writer.writeln("return ", stack.pop(), ";");
-					break;
-				case Opcodes.DUP:
-					stack.push(stack.peek());
-					break;
-				case Opcodes.ATHROW:
-					writer.writeln("throw " + stack.pop());
-					break;
-				case Opcodes.ACONST_NULL:
-					stack.push("null");
-					break;
-				case Opcodes.ARRAYLENGTH:
-					stack.push(stack.pop() + ".length");
-					break;
-				case Opcodes.AALOAD:
-					arrayLoad();
-					break;
-				case Opcodes.AASTORE:
-					arrayStore();
-					break;
-				case Opcodes.DCONST_0:
-					stack.push("0.0");
-					break;
-				case Opcodes.ICONST_0:
-					stack.push("0");
-					break;
-				case Opcodes.ICONST_1:
-					stack.push("1");
-					break;
-				case Opcodes.ICONST_2:
-					stack.push("2");
-					break;
-				case Opcodes.ICONST_3:
-					stack.push("3");
-					break;
-				case Opcodes.ICONST_4:
-					stack.push("4");
-					break;
-				case Opcodes.ICONST_5:
-					stack.push("5");
-					break;
-				case Opcodes.POP:
-					stack.pop();
-					break;
-				case Opcodes.IADD:
-					doOperation("+");
-					break;
-				case Opcodes.DSUB:
-					doOperation("-");
-					break;
-				case Opcodes.FMUL:
-					doOperation("*");
-					break;
-				case Opcodes.F2D:
-					doCast("double");
-					break;
-				case Opcodes.D2F:
-					doCast("float");
-					break;
-				case Opcodes.FNEG:
-					stack.push("-" + stack.pop());
-					break;
-				case Opcodes.IAND:
-					doOperation("&");
-					break;
-				default:
-					throw new UnsupportedOperationException(String.format("Unknown method: 0x%02X", opcode));
-			}
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException(e);
-		}
-	}
-	
-	private void arrayLoad()
-	{
-		var index = stack.pop();
-		var array = stack.pop();
-		stack.push(array + "[" + index + "]");
-	}
-	
-	private void arrayStore()
-	{
-		var value = stack.pop();
-		var index = stack.pop();
-		var array = stack.pop();
-		writer.writelnUnsafe(array, "[", index, "] = ", value, ";");
-	}
-	
-	private void doOperation(String operation)
-	{
-		var value2 = stack.pop();
-		var value1 = stack.pop();
-		stack.push(value1 + ' ' + operation + ' ' + value2);
-	}
-	
-	private void doCast(String target)
-	{
-		stack.push("(cast(" + target + ")" + stack.pop() + ")");
+		InsnDecoder.visitInsn(state, opcode);
 	}
 	
 	@Override
@@ -342,7 +233,7 @@ public class DMethodVisitor extends MethodVisitor
 	@Override
 	public void visitIincInsn(int var, int increment)
 	{
-		writer.writelnUnsafe(getVar(var), " += ", increment);
+		writer.writelnUnsafe(state.getVariableName(var), " += ", increment);
 	}
 	
 	@Override
@@ -413,14 +304,14 @@ public class DMethodVisitor extends MethodVisitor
 	
 	private void invokeVirtualMethod(String name, String descriptor)
 	{
-		List<String> arguments = popFromStack(Type.getArgumentTypes(descriptor).length);
+		List<String> arguments = state.popFromStack(Type.getArgumentTypes(descriptor).length);
 		String variable = stack.pop();
 		stack.push(variable + "." + name + "(" + String.join(", ", arguments) + ")");
 	}
 	
 	private void invokeStaticMethod(String variable, String name, String descriptor)
 	{
-		List<String> arguments = popFromStack(Type.getArgumentTypes(descriptor).length);
+		List<String> arguments = state.popFromStack(Type.getArgumentTypes(descriptor).length);
 		stack.push(Utils.getClassName(variable) + "." + name + "(" + String.join(", ", arguments) + ")");
 	}
 	
@@ -433,17 +324,17 @@ public class DMethodVisitor extends MethodVisitor
 				if (var == 0 && !isStatic())
 					stack.push("this");
 				else
-					stack.push(getVar(var));
+					stack.push(state.getVariableName(var));
 				break;
 			case Opcodes.ILOAD:
-				stack.push(getVar(var));
+				stack.push(state.getVariableName(var));
 				break;
 			case Opcodes.ISTORE:
 			case Opcodes.LSTORE:
 			case Opcodes.FSTORE:
 			case Opcodes.DSTORE:
 			case Opcodes.ASTORE:
-				writer.writelnUnsafe(getVar(var), " = ", stack.pop(), ";");
+				writer.writelnUnsafe(state.getVariableName(var), " = ", stack.pop(), ";");
 				break;
 			case Opcodes.DLOAD:
 			case Opcodes.FLOAD:
@@ -467,7 +358,7 @@ public class DMethodVisitor extends MethodVisitor
 				break;
 			case Opcodes.INSTANCEOF:
 			case Opcodes.ANEWARRAY:
-				String local = getLocal();
+				String local = state.createLocalVariable();
 				//writer.writelnUnsafe("auto ", local, " = _Object.newArray(" + stack.pop() + ");");
 				writer.writelnUnsafe("auto ", local, " = new " + type + "[" + stack.pop() + "];");
 				stack.push(local);
@@ -480,57 +371,8 @@ public class DMethodVisitor extends MethodVisitor
 	private void doNew(String type)
 	{
 		type = Utils.identifierToD(type);
-		String var = getLocal();
+		String var = state.createLocalVariable();
 		writer.writelnUnsafe(type + " " + var + ";");
 		stack.push(var);
-	}
-	
-	/**
-	 * Writes the entirety of the stack as a statement.
-	 */
-	private void writeStackAsStatement()
-	{
-		if (stack.isEmpty())
-			return;
-		
-		writer.writelnUnsafe("// Start of stack dump");
-		while (!stack.isEmpty())
-		{
-			String statement = stack.remove();
-			writer.writelnUnsafe(statement, ";");
-		}
-		writer.writelnUnsafe("// End of stack dump");
-	}
-	
-	/**
-	 * Pops several items from the stack.
-	 * @param count The number of items to pop.
-	 * @return The popped items.
-	 */
-	private List<String> popFromStack(int count)
-	{
-		LinkedList<String> items = new LinkedList<>();
-		while (count > 0)
-		{
-			items.push(stack.pop());
-			count--;
-		}
-		return items;
-	}
-	
-	/**
-	 * Gets name of local variable.
-	 * @param index The index of the local variable.
-	 * @return The name of the variable.
-	 */
-	private String getVar(int index)
-	{
-		return "var" + index;
-	}
-	
-	private String getLocal()
-	{
-		extraLocal++;
-		return "local" + extraLocal;
 	}
 }
