@@ -1,7 +1,6 @@
 package be.seeseemelk.jtsc.recompiler.instructions;
 
 import java.io.IOException;
-import java.util.NoSuchElementException;
 
 import org.objectweb.asm.Opcodes;
 
