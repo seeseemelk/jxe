@@ -15,6 +15,7 @@ import be.seeseemelk.jtsc.recompiler.instructions.FieldInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.InsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.LdcInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.MethodInsnDecoder;
+import be.seeseemelk.jtsc.recompiler.instructions.TypeInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.VarInsnDecoder;
 import be.seeseemelk.jtsc.types.Visibility;
 
@@ -215,31 +216,6 @@ public class DMethodVisitor extends MethodVisitor
 	@Override
 	public void visitTypeInsn(int opcode, String type)
 	{
-		switch (opcode)
-		{
-			case Opcodes.NEW:
-				doNew(type);
-				break;
-			case Opcodes.CHECKCAST:
-				state.pushToStack("checkedCast!(" + Utils.typeToName(type) + ")(" + state.popFromStack() + ")");
-				break;
-			case Opcodes.INSTANCEOF:
-			case Opcodes.ANEWARRAY:
-				String local = state.createLocalVariable();
-				//writer.writelnUnsafe("auto ", local, " = _Object.newArray(" + state.popFromStack() + ");");
-				writer.writelnUnsafe("auto ", local, " = new " + type + "[" + state.popFromStack() + "];");
-				state.pushToStack(local);
-				break;
-			default:
-				throw new UnsupportedOperationException("Unknown type: " + opcode + ", " + type);
-		}
-	}
-	
-	private void doNew(String type)
-	{
-		type = Utils.identifierToD(type);
-		String var = state.createLocalVariable();
-		writer.writelnUnsafe(type + " " + var + ";");
-		state.pushToStack(var);
+		TypeInsnDecoder.visit(state, opcode, type);
 	}
 }
