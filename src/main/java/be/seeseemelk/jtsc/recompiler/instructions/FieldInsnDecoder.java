@@ -65,7 +65,7 @@ public final class FieldInsnDecoder
 		catch (Exception e)
 		{
 			throw new RuntimeException(String.format(
-					"Error occured while processing 0x%X[owner=%s,name=%s,descriptor=%s]",
+					"Exception occured while processing 0x%X[owner=%s,name=%s,descriptor=%s]",
 					opcode, owner, name, descriptor),
 					e);
 		}

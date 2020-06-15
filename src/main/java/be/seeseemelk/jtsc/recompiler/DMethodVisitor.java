@@ -3,7 +3,6 @@ package be.seeseemelk.jtsc.recompiler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -15,6 +14,7 @@ import org.objectweb.asm.Type;
 import be.seeseemelk.jtsc.recompiler.instructions.FieldInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.InsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.LdcInsnDecoder;
+import be.seeseemelk.jtsc.recompiler.instructions.MethodInsnDecoder;
 import be.seeseemelk.jtsc.types.Visibility;
 
 public class DMethodVisitor extends MethodVisitor
@@ -203,62 +203,7 @@ public class DMethodVisitor extends MethodVisitor
 	@Override
 	public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface)
 	{
-		switch (opcode)
-		{
-			case Opcodes.INVOKESPECIAL:
-				if ((opcode & Opcodes.ACC_SUPER) != 0)
-				{
-					int argCount = Type.getArgumentTypes(descriptor).length;
-					LinkedList<String> keywords = new LinkedList<>();
-					LinkedList<String> arguments = new LinkedList<>();
-					for (int i = 0; i < argCount; i++)
-					{
-						arguments.push(state.popFromStack());
-					}
-					keywords.add("(");
-					keywords.add(String.join(", ", arguments));
-					keywords.add(")");
-					String objectRef = state.popFromStack(); // Pop 'this' reference
-					if (objectRef.equals("this"))
-					{
-						keywords.push("super");
-					}
-					else
-					{
-						keywords.push(objectRef + " = new " + Utils.identifierToD(owner));
-					}
-					keywords.add(";");
-					String construction = String.join("", keywords);
-					writer.writelnUnsafe(construction);
-				}
-				else
-					throw new UnsupportedOperationException("Cannot perform INVOKESPECIAL without ACC_SUPER");
-				//writer.writelnUnsafe(variable + "." + name + "()");
-				break;
-			case Opcodes.INVOKEVIRTUAL:
-			case Opcodes.INVOKEINTERFACE:
-				invokeVirtualMethod(Utils.identifierToD(name), descriptor);
-				break;
-			case Opcodes.INVOKESTATIC:
-				invokeStaticMethod(Utils.identifierToD(owner), Utils.identifierToD(name), descriptor);
-				break;
-			default:
-				throw new UnsupportedOperationException("Unknown method: " + opcode + ", " + owner + ", " + name
-						+ ", " + descriptor + ", " + isInterface);
-		}
-	}
-	
-	private void invokeVirtualMethod(String name, String descriptor)
-	{
-		List<String> arguments = state.popFromStack(Type.getArgumentTypes(descriptor).length);
-		String variable = state.popFromStack();
-		state.pushToStack(variable + "." + name + "(" + String.join(", ", arguments) + ")");
-	}
-	
-	private void invokeStaticMethod(String variable, String name, String descriptor)
-	{
-		List<String> arguments = state.popFromStack(Type.getArgumentTypes(descriptor).length);
-		state.pushToStack(Utils.getClassName(variable) + "." + name + "(" + String.join(", ", arguments) + ")");
+		MethodInsnDecoder.visit(state, opcode, owner, name, descriptor, isInterface);
 	}
 	
 	@Override
