@@ -13,13 +13,13 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import be.seeseemelk.jtsc.recompiler.instructions.FieldInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.InsnDecoder;
 import be.seeseemelk.jtsc.types.Visibility;
 
 public class DMethodVisitor extends MethodVisitor
 {
 	private SourceWriter writer;
-	private Deque<String> stack = new LinkedList<>();
 	private boolean isStatic = false;
 	private Visibility visibility;
 	private String name;
@@ -185,49 +185,7 @@ public class DMethodVisitor extends MethodVisitor
 	@Override
 	public void visitFieldInsn(int opcode, String owner, String name, String descriptor)
 	{
-		owner = Utils.getClassName(owner);
-		name = Utils.identifierToD(name);
-		switch (opcode)
-		{
-			case Opcodes.GETSTATIC:
-				doGetStatic(owner, name);
-				break;
-			case Opcodes.GETFIELD:
-				doGetField(name);
-			case Opcodes.PUTSTATIC:
-				doPutStatic(owner, name);
-				break;
-			case Opcodes.PUTFIELD:
-				doPutField(name);
-				break;
-			default:
-				throw new UnsupportedOperationException("Unknown field instruction " + opcode + ", "
-						+ owner + ", " + name + ", " + descriptor);
-		}
-	}
-	
-	private void doGetStatic(String owner, String field)
-	{
-		stack.push(owner + "." + field);
-	}
-	
-	private void doGetField(String field)
-	{
-		var objectRef = stack.pop();
-		stack.push(objectRef + "." + field);
-	}
-	
-	private void doPutStatic(String owner, String field)
-	{
-		var value = stack.pop();
-		writer.writelnUnsafe(owner, ".", field, " = ", value, ";");
-	}
-	
-	private void doPutField(String field)
-	{
-		var value = stack.pop();
-		var objectRef = stack.pop();
-		writer.writelnUnsafe(objectRef, ".", field, " = ", value, ";");
+		FieldInsnDecoder.visit(state, opcode, owner, name, descriptor);
 	}
 	
 	@Override
@@ -240,16 +198,16 @@ public class DMethodVisitor extends MethodVisitor
 	public void visitLdcInsn(Object value)
 	{
 		if (value instanceof String)
-			stack.push("new String(\"" + value + "\")");
+			state.pushToStack("new String(\"" + value + "\")");
 		else if (value instanceof Double)
-			stack.push(value.toString());
+			state.pushToStack(value.toString());
 		else if (value instanceof Integer)
-			stack.push(value.toString());
+			state.pushToStack(value.toString());
 		else if (value instanceof Float)
-			stack.push(value.toString() + "f");
+			state.pushToStack(value.toString() + "f");
 		else if (value instanceof Type)
-			//stack.push("/*Unknown LDC of type 'Type' \"" + value + "\"*/");
-			stack.push(Utils.typeToName(((Type) value).toString()) + "._class");
+			//state.pushToStack("/*Unknown LDC of type 'Type' \"" + value + "\"*/");
+			state.pushToStack(Utils.typeToName(((Type) value).toString()) + "._class");
 		else
 			throw new UnsupportedOperationException("Unknown constant: (" + value.getClass().getSimpleName() + ") " + value);
 	}
@@ -267,12 +225,12 @@ public class DMethodVisitor extends MethodVisitor
 					LinkedList<String> arguments = new LinkedList<>();
 					for (int i = 0; i < argCount; i++)
 					{
-						arguments.push(stack.pop());
+						arguments.push(state.popFromStack());
 					}
 					keywords.add("(");
 					keywords.add(String.join(", ", arguments));
 					keywords.add(")");
-					String objectRef = stack.pop(); // Pop 'this' reference
+					String objectRef = state.popFromStack(); // Pop 'this' reference
 					if (objectRef.equals("this"))
 					{
 						keywords.push("super");
@@ -305,36 +263,37 @@ public class DMethodVisitor extends MethodVisitor
 	private void invokeVirtualMethod(String name, String descriptor)
 	{
 		List<String> arguments = state.popFromStack(Type.getArgumentTypes(descriptor).length);
-		String variable = stack.pop();
-		stack.push(variable + "." + name + "(" + String.join(", ", arguments) + ")");
+		String variable = state.popFromStack();
+		state.pushToStack(variable + "." + name + "(" + String.join(", ", arguments) + ")");
 	}
 	
 	private void invokeStaticMethod(String variable, String name, String descriptor)
 	{
 		List<String> arguments = state.popFromStack(Type.getArgumentTypes(descriptor).length);
-		stack.push(Utils.getClassName(variable) + "." + name + "(" + String.join(", ", arguments) + ")");
+		state.pushToStack(Utils.getClassName(variable) + "." + name + "(" + String.join(", ", arguments) + ")");
 	}
 	
 	@Override
 	public void visitVarInsn(int opcode, int var)
 	{
+		System.out.printf("Var Insn: 0x%X%n", opcode);
 		switch (opcode)
 		{
 			case Opcodes.ALOAD:
 				if (var == 0 && !isStatic())
-					stack.push("this");
+					state.pushToStack("this");
 				else
-					stack.push(state.getVariableName(var));
+					state.pushToStack(state.getVariableName(var));
 				break;
 			case Opcodes.ILOAD:
-				stack.push(state.getVariableName(var));
+				state.pushToStack(state.getVariableName(var));
 				break;
 			case Opcodes.ISTORE:
 			case Opcodes.LSTORE:
 			case Opcodes.FSTORE:
 			case Opcodes.DSTORE:
 			case Opcodes.ASTORE:
-				writer.writelnUnsafe(state.getVariableName(var), " = ", stack.pop(), ";");
+				writer.writelnUnsafe(state.getVariableName(var), " = ", state.popFromStack(), ";");
 				break;
 			case Opcodes.DLOAD:
 			case Opcodes.FLOAD:
@@ -354,14 +313,14 @@ public class DMethodVisitor extends MethodVisitor
 				doNew(type);
 				break;
 			case Opcodes.CHECKCAST:
-				stack.push("checkedCast!(" + Utils.typeToName(type) + ")(" + stack.pop() + ")");
+				state.pushToStack("checkedCast!(" + Utils.typeToName(type) + ")(" + state.popFromStack() + ")");
 				break;
 			case Opcodes.INSTANCEOF:
 			case Opcodes.ANEWARRAY:
 				String local = state.createLocalVariable();
-				//writer.writelnUnsafe("auto ", local, " = _Object.newArray(" + stack.pop() + ");");
-				writer.writelnUnsafe("auto ", local, " = new " + type + "[" + stack.pop() + "];");
-				stack.push(local);
+				//writer.writelnUnsafe("auto ", local, " = _Object.newArray(" + state.popFromStack() + ");");
+				writer.writelnUnsafe("auto ", local, " = new " + type + "[" + state.popFromStack() + "];");
+				state.pushToStack(local);
 				break;
 			default:
 				throw new UnsupportedOperationException("Unknown type: " + opcode + ", " + type);
@@ -373,6 +332,6 @@ public class DMethodVisitor extends MethodVisitor
 		type = Utils.identifierToD(type);
 		String var = state.createLocalVariable();
 		writer.writelnUnsafe(type + " " + var + ";");
-		stack.push(var);
+		state.pushToStack(var);
 	}
 }
