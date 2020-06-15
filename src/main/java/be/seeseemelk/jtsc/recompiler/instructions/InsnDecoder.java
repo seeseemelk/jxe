@@ -158,7 +158,7 @@ public final class InsnDecoder
 		state.getWriter().writeln("throw " + expression);
 	}
 
-	public static void visitInsn(MethodState state, int opcode)
+	public static void visit(MethodState state, int opcode)
 	{
 		try
 		{

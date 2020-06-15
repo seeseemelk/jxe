@@ -3,7 +3,6 @@ package be.seeseemelk.jtsc.recompiler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,6 +14,7 @@ import org.objectweb.asm.Type;
 
 import be.seeseemelk.jtsc.recompiler.instructions.FieldInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.InsnDecoder;
+import be.seeseemelk.jtsc.recompiler.instructions.LdcInsnDecoder;
 import be.seeseemelk.jtsc.types.Visibility;
 
 public class DMethodVisitor extends MethodVisitor
@@ -179,7 +179,7 @@ public class DMethodVisitor extends MethodVisitor
 	@Override
 	public void visitInsn(int opcode)
 	{
-		InsnDecoder.visitInsn(state, opcode);
+		InsnDecoder.visit(state, opcode);
 	}
 	
 	@Override
@@ -197,19 +197,7 @@ public class DMethodVisitor extends MethodVisitor
 	@Override
 	public void visitLdcInsn(Object value)
 	{
-		if (value instanceof String)
-			state.pushToStack("new String(\"" + value + "\")");
-		else if (value instanceof Double)
-			state.pushToStack(value.toString());
-		else if (value instanceof Integer)
-			state.pushToStack(value.toString());
-		else if (value instanceof Float)
-			state.pushToStack(value.toString() + "f");
-		else if (value instanceof Type)
-			//state.pushToStack("/*Unknown LDC of type 'Type' \"" + value + "\"*/");
-			state.pushToStack(Utils.typeToName(((Type) value).toString()) + "._class");
-		else
-			throw new UnsupportedOperationException("Unknown constant: (" + value.getClass().getSimpleName() + ") " + value);
+		LdcInsnDecoder.visit(state, value);
 	}
 	
 	@Override
