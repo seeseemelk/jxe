@@ -13,6 +13,7 @@ public class MethodState
 	private Deque<String> stack = new LinkedList<>();
 	private int nextLocalVariable = 0;
 	private final SourceWriter writer;
+	private boolean isStatic = false;
 	
 	public MethodState(SourceWriter writer)
 	{
@@ -96,5 +97,26 @@ public class MethodState
 	public SourceWriter getWriter()
 	{
 		return writer;
+	}
+	
+	/**
+	 * Checks whether the method this object is describing is a static method or
+	 * not.
+	 * 
+	 * @return `true` if the method is static, `false` if it is not.
+	 */
+	public boolean isMethodStatic()
+	{
+		return isStatic;
+	}
+	
+	/**
+	 * Sets whether the method this object is describing is a static method or not.
+	 * 
+	 * @param isStatic `true` if the method is a static method, `false` if it isn't.
+	 */
+	public void setMethodStatic(boolean isStatic)
+	{
+		this.isStatic = isStatic;
 	}
 }

@@ -15,12 +15,12 @@ import be.seeseemelk.jtsc.recompiler.instructions.FieldInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.InsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.LdcInsnDecoder;
 import be.seeseemelk.jtsc.recompiler.instructions.MethodInsnDecoder;
+import be.seeseemelk.jtsc.recompiler.instructions.VarInsnDecoder;
 import be.seeseemelk.jtsc.types.Visibility;
 
 public class DMethodVisitor extends MethodVisitor
 {
 	private SourceWriter writer;
-	private boolean isStatic = false;
 	private Visibility visibility;
 	private String name;
 	private String className;
@@ -37,12 +37,12 @@ public class DMethodVisitor extends MethodVisitor
 	
 	public void setStatic(boolean isStatic)
 	{
-		this.isStatic = isStatic;
+		state.setMethodStatic(isStatic);
 	}
 	
 	public boolean isStatic()
 	{
-		return this.isStatic;
+		return state.isMethodStatic();
 	}
 	
 	public boolean isConstructor()
@@ -127,7 +127,7 @@ public class DMethodVisitor extends MethodVisitor
 			}
 		}
 		
-		if (isStatic || isStaticInitializer())
+		if (isStatic() || isStaticInitializer())
 			keywords.add("static ");
 		
 		if (isConstructor() || isStaticInitializer())
@@ -209,32 +209,7 @@ public class DMethodVisitor extends MethodVisitor
 	@Override
 	public void visitVarInsn(int opcode, int var)
 	{
-		System.out.printf("Var Insn: 0x%X%n", opcode);
-		switch (opcode)
-		{
-			case Opcodes.ALOAD:
-				if (var == 0 && !isStatic())
-					state.pushToStack("this");
-				else
-					state.pushToStack(state.getVariableName(var));
-				break;
-			case Opcodes.ILOAD:
-				state.pushToStack(state.getVariableName(var));
-				break;
-			case Opcodes.ISTORE:
-			case Opcodes.LSTORE:
-			case Opcodes.FSTORE:
-			case Opcodes.DSTORE:
-			case Opcodes.ASTORE:
-				writer.writelnUnsafe(state.getVariableName(var), " = ", state.popFromStack(), ";");
-				break;
-			case Opcodes.DLOAD:
-			case Opcodes.FLOAD:
-			case Opcodes.LLOAD:
-			case Opcodes.RET:
-			default:
-				throw new UnsupportedOperationException("Unknown opcode: " + opcode + ", " + var);
-		}
+		VarInsnDecoder.visit(state, opcode, var);
 	}
 	
 	@Override
