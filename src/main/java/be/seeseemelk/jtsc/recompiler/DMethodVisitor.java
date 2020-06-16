@@ -272,7 +272,7 @@ public class DMethodVisitor extends MethodVisitor
 	public void visitInvokeDynamicInsn(String name, String descriptor, Handle bootstrapMethodHandle,
 			Object... bootstrapMethodArguments)
 	{
-		throw new UnsupportedOperationException("Not implemented");
+		MethodInsnDecoder.visitDynamic(state, name, descriptor, bootstrapMethodHandle, bootstrapMethodArguments);
 	}
 	
 	@Override

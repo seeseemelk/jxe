@@ -26,6 +26,12 @@ public final class JumpInsnDecoder
 		state.getWriter().writeln("if (", value, " ", operator, " 0) goto ", target, ";");
 	}
 	
+	private static void visitGoto(MethodState state, Label label) throws IOException
+	{
+		var target = state.getLabelName(label);
+		state.getWriter().writeln("goto ", target, ";");
+	}
+	
 	public static void visit(MethodState state, int opcode, Label label)
 	{
 		try
@@ -67,6 +73,9 @@ public final class JumpInsnDecoder
 					break;
 				case Opcodes.IF_ICMPGE:
 					visitIfICmp(state, label, ">=");
+					break;
+				case Opcodes.GOTO:
+					visitGoto(state, label);
 					break;
 				default:
 					throw new UnsupportedOperationException("Unknown opcode: " + opcode + ", " + state.getLabelName(label));

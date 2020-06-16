@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
@@ -85,6 +86,39 @@ public final class MethodInsnDecoder
 					"Exception occured while processing 0x%X[owner=%s,name=%s,descriptor=%s,isInterface=%s]",
 					opcode, owner, name, descriptor, isInterface ? "true" : "false"),
 					e);
+		}
+	}
+
+	public static void visitDynamic(MethodState state, String name, String descriptor, Handle bootstrapMethodHandle,
+			Object[] bootstrapMethodArguments)
+	{
+		try
+		{
+			var delegate = state.createLocalVariable();
+			
+			Type type = Type.getType(descriptor);
+			String returnType = Utils.getClassName(type.getReturnType().getInternalName());
+			
+			// Create static delegate
+			var writer = state.getWriter();
+			writer.writeln("static ", returnType, " delegate() ", delegate, " = null;");
+			writer.writeln("if (", delegate, " is null) {");
+			writer.indent();
+			
+			// Initialize delegate
+			var targetClass = Utils.getClassName(bootstrapMethodHandle.getOwner());
+			var targetMethod = Utils.identifierToD(bootstrapMethodHandle.getName());
+			writer.writeln(delegate, " = ", targetClass, ".", targetMethod, "();");
+			
+			writer.undent();
+			writer.writeln("}");
+			
+			// Perform call
+			state.pushToStack(delegate + "()");
+		}
+		catch (Exception e)
+		{
+			throw new RuntimeException("Exception occured while processing invokedynamic", e);
 		}
 	}
 }

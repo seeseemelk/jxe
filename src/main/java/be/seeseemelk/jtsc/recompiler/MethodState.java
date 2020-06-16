@@ -92,7 +92,8 @@ public class MethodState
 	 */
 	public String createLocalVariable()
 	{
-		return "local" + nextLocalVariable++;
+		nextLocalVariable++;
+		return "local" + (nextLocalVariable - 1);
 	}
 	
 	/**
