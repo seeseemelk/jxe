@@ -122,18 +122,25 @@ public class DClassVisitor extends ClassVisitor
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions)
 	{
-		var visitor = new DMethodVisitor(writer);
-		visitor.setFromAccess(access);
-		visitor.setName(name);
-		visitor.setReturnType(Utils.typeToName(Type.getReturnType(descriptor).toString()));
-		visitor.setArguments(Type.getArgumentTypes(descriptor));
-		visitor.setClassName(className);
+		var methodDescriptor = new MethodDescriptor();
+		methodDescriptor.setFromAccess(access);
+		methodDescriptor.setName(Utils.identifierToD(name));
+		methodDescriptor.setReturnType(Utils.typeToName(Type.getReturnType(descriptor).toString()));
+		methodDescriptor.setArguments(Type.getArgumentTypes(descriptor));
+		methodDescriptor.setClassName(className);
 		
-		if (visitor.isStatic() && name.equals("main"))
+		if (methodDescriptor.isStatic() && name.equals("main"))
 		{
 			hasMain = true;
 		}
-		
+
+		var visitor = new StreamMethodVisitor();
+		visitor.setCallback(stream ->
+		{
+			var tree = InstructionTree.from(stream);
+			var treeWriter = new TreeWriter(tree, writer, methodDescriptor);
+			treeWriter.write();
+		});
 		return visitor;
 	}
 	

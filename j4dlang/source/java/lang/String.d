@@ -5,7 +5,7 @@ import java.lang.Object;
 import std.algorithm;
 import std.array;
 
-class String : _Object
+final class String : _Object
 {
     mixin autoReflector!String;
 

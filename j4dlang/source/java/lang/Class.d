@@ -4,5 +4,5 @@ import java.lang.Object;
 
 class Class : _Object
 {
-    mixin autoReflector!Class;
+	//mixin autoReflector!Class;
 }

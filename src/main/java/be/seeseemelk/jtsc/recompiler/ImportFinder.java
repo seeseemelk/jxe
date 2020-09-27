@@ -7,6 +7,7 @@ import java.util.TreeSet;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 /**
  * Finds all relevant imports for a file.
@@ -52,6 +53,11 @@ public class ImportFinder extends ClassVisitor
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions)
 	{
+		var type = Type.getReturnType(descriptor);
+		if (type.getSort() == Type.OBJECT)
+		{
+			imports.add(Utils.identifierToD(Type.getReturnType(descriptor).getClassName()));
+		}
 		return new MethodImportFinder();
 	}
 	

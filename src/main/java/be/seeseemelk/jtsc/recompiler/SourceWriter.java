@@ -7,6 +7,7 @@ public class SourceWriter
 {
 	private Writer writer;
 	private int indentation = 0;
+	private boolean doIndent = false;
 	
 	public SourceWriter(Writer writer)
 	{
@@ -15,10 +16,12 @@ public class SourceWriter
 	
 	public void write(Object... str) throws IOException
 	{
-		for (int i = 0; i < indentation; i++)
-			writer.write("\t");
+		if (doIndent)
+			for (int i = 0; i < indentation; i++)
+				writer.write("\t");
 		for (Object obj : str)
 			writer.write(obj.toString());
+		doIndent = false;
 	}
 	
 	public void writeUnsafe(Object... str)
@@ -37,6 +40,7 @@ public class SourceWriter
 	{
 		write(str);
 		writer.write("\n");
+		doIndent = true;
 	}
 	
 	public void writelnUnsafe(Object... str)

@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc.recompiler.instructions;
+package be.seeseemelk.jtsc.decoders;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -108,7 +108,18 @@ public final class MethodInsnDecoder
 			// Initialize delegate
 			var targetClass = Utils.getClassName(bootstrapMethodHandle.getOwner());
 			var targetMethod = Utils.identifierToD(bootstrapMethodHandle.getName());
-			writer.writeln(delegate, " = ", targetClass, ".", targetMethod, "();");
+			Type method = (Type) bootstrapMethodArguments[2];
+			String lambdaReturnType = Utils.getClassName(method.getArgumentTypes()[0].getClassName());
+			writer.writeln(
+					delegate,
+					" = ",
+					targetClass,
+					".",
+					targetMethod,
+					"((val) => this.",
+					Utils.identifierToD(((Handle) bootstrapMethodArguments[1]).getName()),
+					"(cast(", lambdaReturnType ,") val));"
+			);
 			
 			writer.undent();
 			writer.writeln("}");

@@ -1,11 +1,6 @@
 package be.seeseemelk.jtsc.recompiler;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Attribute;
@@ -13,217 +8,89 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 
-import be.seeseemelk.jtsc.recompiler.instructions.FieldInsnDecoder;
-import be.seeseemelk.jtsc.recompiler.instructions.InsnDecoder;
-import be.seeseemelk.jtsc.recompiler.instructions.JumpInsnDecoder;
-import be.seeseemelk.jtsc.recompiler.instructions.LdcInsnDecoder;
-import be.seeseemelk.jtsc.recompiler.instructions.MethodInsnDecoder;
-import be.seeseemelk.jtsc.recompiler.instructions.TypeInsnDecoder;
-import be.seeseemelk.jtsc.recompiler.instructions.VarInsnDecoder;
-import be.seeseemelk.jtsc.types.Visibility;
+import be.seeseemelk.jtsc.instructions.ConditionalInstruction;
+import be.seeseemelk.jtsc.instructions.FieldInstruction;
+import be.seeseemelk.jtsc.instructions.IntegerIncrementInstruction;
+import be.seeseemelk.jtsc.instructions.InvokeDynamicInstruction;
+import be.seeseemelk.jtsc.instructions.LoadConstantInstruction;
+import be.seeseemelk.jtsc.instructions.MethodCallInstruction;
+import be.seeseemelk.jtsc.instructions.UnconditionalInstruction;
+import be.seeseemelk.jtsc.instructions.VarInstruction;
+import be.seeseemelk.jtsc.instructions.ZeroArgInstruction;
 
-public class DMethodVisitor extends MethodVisitor
+public class StreamMethodVisitor extends MethodVisitor
 {
-	private SourceWriter writer;
-	private Visibility visibility;
-	private String name;
-	private String className;
-	private String returnType;
-	private List<String> arguments = Collections.emptyList();
-	private final MethodState state;
-
-	public DMethodVisitor(SourceWriter writer)
+	private InstructionStream stream = new InstructionStream();
+	private Consumer<InstructionStream> callback = (stream) -> {};
+	
+	public StreamMethodVisitor()
 	{
 		super(Opcodes.ASM7);
-		this.writer = writer;
-		this.state = new MethodState(writer);
 	}
 	
-	public void setStatic(boolean isStatic)
+	public InstructionStream getInstructionStream()
 	{
-		state.setMethodStatic(isStatic);
+		return stream;
 	}
 	
-	public boolean isStatic()
+	public void setCallback(Consumer<InstructionStream> callback)
 	{
-		return state.isMethodStatic();
-	}
-	
-	public boolean isConstructor()
-	{
-		return name.equals("<init>");
-	}
-	
-	public boolean isStaticInitializer()
-	{
-		return name.equals("<clinit>");
-	}
-	
-	public void setName(String name)
-	{
-		this.name = name;
-	}
-	
-	public String getName()
-	{
-		return this.name;
-	}
-	
-	public void setClassName(String name)
-	{
-		className = name;
-	}
-	
-	public String getClassName()
-	{
-		return className;
-	}
-	
-	public void setReturnType(String returnType)
-	{
-		this.returnType = returnType;
-	}
-	
-	public void setVisibility(Visibility visibility)
-	{
-		this.visibility = visibility;
-	}
-	
-	public void setArguments(List<String> args)
-	{
-		this.arguments = args;
-	}
-
-	public void setArguments(Type[] argumentTypes)
-	{
-		this.arguments = Stream.of(argumentTypes)
-			.map(type -> Utils.typeToName(type.toString()))
-			.collect(Collectors.toList());
-	}
-	
-	public void setFromAccess(int access)
-	{
-		setStatic(Utils.isStatic(access));
-		setVisibility(Visibility.fromAccess(access));
+		this.callback = callback;
 	}
 	
 	@Override
 	public void visitCode()
 	{
-		System.out.println("METHOD " + getName());
-		
-		List<String> keywords = new ArrayList<>();
-		
-		if (!isStaticInitializer())
-		{
-			switch (visibility)
-			{
-				case PRIVATE:
-					keywords.add("private ");
-					break;
-				case PACKAGE:
-					System.err.println("Warning: PACKAGE visibility is not supported, using PUBLIC instead");
-				case PUBLIC:
-					keywords.add("public ");
-					break;
-				case PROTECTED:
-					keywords.add("protected ");
-					break;
-			}
-		}
-		
-		if (isStatic() || isStaticInitializer())
-			keywords.add("static ");
-		
-		if (isConstructor() || isStaticInitializer())
-			keywords.add("this");
-		else
-		{
-			keywords.add(returnType);
-			keywords.add(" ");
-			keywords.add(name);
-		}
-		
-		keywords.add("(");
-		
-		int argCount = 0;
-		// Non-static functions have a 'this' parameter at index 0.
-		int offset = isStatic() ? 0 : 1;
-		for (var arg : arguments)
-		{
-			keywords.add(Utils.getClassName(arg));
-			keywords.add(" ");
-			keywords.add(state.getVariableName(argCount + offset));
-			argCount++;
-			if (argCount < arguments.size())
-				keywords.add(", ");
-		}
-		
-		keywords.add(") ");
-		keywords.add("{");
-		
-		writer.writelnUnsafe(String.join("", keywords));
-		writer.indent();
 	}
 	
 	@Override
 	public void visitEnd()
 	{
-		try
-		{
-			writer.undent();
-			writer.writeln("}");
-			writer.writeln();
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException(e);
-		}
+		callback.accept(stream);
 	}
 
 	@Override
 	public void visitInsn(int opcode)
 	{
-		InsnDecoder.visit(state, opcode);
+		stream.add(new ZeroArgInstruction(opcode));
 	}
 	
 	@Override
 	public void visitFieldInsn(int opcode, String owner, String name, String descriptor)
 	{
-		FieldInsnDecoder.visit(state, opcode, owner, name, descriptor);
+		stream.add(new FieldInstruction(opcode, owner, name, descriptor));
 	}
 	
 	@Override
 	public void visitIincInsn(int var, int increment)
 	{
-		writer.writelnUnsafe(state.getVariableName(var), " += ", increment);
+		stream.add(new IntegerIncrementInstruction(var, increment));
 	}
 	
 	@Override
 	public void visitLdcInsn(Object value)
 	{
-		LdcInsnDecoder.visit(state, value);
+		stream.add(new LoadConstantInstruction(value));
 	}
 	
 	@Override
 	public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface)
 	{
-		MethodInsnDecoder.visit(state, opcode, owner, name, descriptor, isInterface);
+		stream.add(new MethodCallInstruction(opcode, owner, name, descriptor, isInterface));
 	}
 	
 	@Override
 	public void visitVarInsn(int opcode, int var)
 	{
-		VarInsnDecoder.visit(state, opcode, var);
+		stream.add(new VarInstruction(opcode, var));
 	}
 	
 	@Override
 	public void visitTypeInsn(int opcode, String type)
 	{
-		TypeInsnDecoder.visit(state, opcode, type);
+		throw new UnsupportedOperationException("Not implemented");
 	}
 	
 	@Override
@@ -253,7 +120,7 @@ public class DMethodVisitor extends MethodVisitor
 	@Override
 	public void visitFrame(int type, int numLocal, Object[] local, int numStack, Object[] stack)
 	{
-		writer.writelnUnsafe("// Start of frame");
+		//throw new UnsupportedOperationException("Not implemented");
 	}
 	
 	@Override
@@ -272,19 +139,52 @@ public class DMethodVisitor extends MethodVisitor
 	public void visitInvokeDynamicInsn(String name, String descriptor, Handle bootstrapMethodHandle,
 			Object... bootstrapMethodArguments)
 	{
-		MethodInsnDecoder.visitDynamic(state, name, descriptor, bootstrapMethodHandle, bootstrapMethodArguments);
+		stream.add(
+				new InvokeDynamicInstruction(
+						name,
+						descriptor,
+						bootstrapMethodHandle,
+						bootstrapMethodArguments
+				)
+		);
 	}
 	
 	@Override
 	public void visitJumpInsn(int opcode, Label label)
 	{
-		JumpInsnDecoder.visit(state, opcode, label);
+		switch (opcode)
+		{
+			case Opcodes.IFEQ:
+			case Opcodes.IFNE:
+			case Opcodes.IFLT:
+			case Opcodes.IFGE:
+			case Opcodes.IFGT:
+			case Opcodes.IFLE:
+			case Opcodes.IF_ICMPEQ:
+			case Opcodes.IF_ICMPNE:
+			case Opcodes.IF_ICMPLT:
+			case Opcodes.IF_ICMPGE:
+			case Opcodes.IF_ICMPGT:
+			case Opcodes.IF_ICMPLE:
+			case Opcodes.IF_ACMPEQ:
+			case Opcodes.IF_ACMPNE:
+			case Opcodes.IFNULL:
+			case Opcodes.IFNONNULL:
+				stream.add(new ConditionalInstruction(opcode, label));
+				break;
+			case Opcodes.GOTO:
+				stream.add(new UnconditionalInstruction(opcode, label));
+				break;
+			case Opcodes.JSR:
+			default:
+				throw new UnsupportedOperationException("Not implemented");
+		}
 	}
 	
 	@Override
 	public void visitLabel(Label label)
 	{
-		writer.writelnUnsafe(state.getLabelName(label) + ":");
+		stream.addLabel(label);
 	}
 	
 	@Override
@@ -315,7 +215,6 @@ public class DMethodVisitor extends MethodVisitor
 	@Override
 	public void visitMaxs(int maxStack, int maxLocals)
 	{
-		super.visitMaxs(maxStack, maxLocals);
 	}
 	
 	@Override

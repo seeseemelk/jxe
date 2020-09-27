@@ -38,6 +38,9 @@ public class Utils
 				case "in":
 					part = "_in";
 					break;
+				case "function":
+					part = "_function";
+					break;
 			}
 			parts[i] = part;
 		}

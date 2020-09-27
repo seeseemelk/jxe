@@ -1,6 +1,6 @@
 module java.lang.System;
 
-import java.lang.String;
+import java.lang.String : String;
 
 class System
 {

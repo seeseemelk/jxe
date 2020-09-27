@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc.recompiler.instructions;
+package be.seeseemelk.jtsc.decoders;
 
 import java.io.IOException;
 
