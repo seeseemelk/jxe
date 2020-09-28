@@ -21,7 +21,16 @@ public final class TypeInsnDecoder
 	
 	private static void visitCheckCast(MethodState state, String type)
 	{
-		state.pushToStack("checkedCast!(" + Utils.typeToName(type) + ")(" + state.popFromStack() + ")");
+		var expr = state.popFromStack();
+		var operation = String.format("checkedCast!(%s)(%s)", type, expr);
+		state.pushToStack(operation);
+	}
+	
+	private static void visitInstanceof(MethodState state, String type)
+	{
+		var expr = state.popFromStack();
+		var operation = String.format("(cast(%s) (%s) !is null)", type, expr);
+		state.pushToStack(operation);
 	}
 	
 	private static void visitANewArray(MethodState state, String type) throws IOException
@@ -43,12 +52,14 @@ public final class TypeInsnDecoder
 				case Opcodes.CHECKCAST:
 					visitCheckCast(state, type);
 					break;
+				case Opcodes.INSTANCEOF:
+					visitInstanceof(state, type);
+					break;
 				case Opcodes.ANEWARRAY:
 					visitANewArray(state, type);
 					break;
-				case Opcodes.INSTANCEOF:
 				default:
-					throw new UnsupportedOperationException("Unknown type: " + opcode + ", " + type);
+					throw new UnsupportedOperationException("Unknown )type: " + opcode + ", " + type);
 			}
 		}
 		catch (Exception e)

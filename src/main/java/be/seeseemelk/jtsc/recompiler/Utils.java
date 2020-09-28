@@ -72,6 +72,7 @@ public class Utils
 			case 'V': return "void";
 			case 'Z': return "bool";
 			case 'I': return "int";
+			case 'F': return "float";
 			case '[': return arrayTypeToName(name);
 			case 'L': return getClassName(name.substring(1, name.length() - 1));
 			default: return name;

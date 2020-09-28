@@ -5,6 +5,8 @@ public
 	// These packages should always be imported.
 	import java.lang.Integer : Integer;
 	import java.lang.invoke.LambdaMetafactory : LambdaMetafactory;
+	import java.lang.Exception : _Exception, __JavaException;
+	import java.lang.ClassCastException : ClassCastException;
 }
 
 abstract class _Object : Object
@@ -28,18 +30,27 @@ T checkedCast(T, S)(S s)
 		return null;
 	T t = cast(T) s;
 	if (t is null)
-		throw new Exception("ClassCastException");
+		throwJavaException(new ClassCastException());
 	return t;
+}
+
+/**
+Throws a Java exception.
+*/
+void throwJavaException(_Exception exception)
+{
+	throw new __JavaException(exception);
 }
 
 mixin template autoReflector(T)
 {
 	import java.lang.Class;
 
-	static Class _class;
-
-	private static this()
+	private static Class _class()
 	{
-		_class = new Class;
+		static Class _class = null;
+		if (_class is null)
+			_class = new Class;
+		return _class;
 	}
 }

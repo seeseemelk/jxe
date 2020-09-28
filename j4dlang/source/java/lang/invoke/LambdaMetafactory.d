@@ -5,7 +5,7 @@ import java.util._function.Predicate : Predicate;
 
 class LambdaMetafactory : _Object
 {
-	//mixin autoReflector!LambdaMetafactory;
+	mixin autoReflector!LambdaMetafactory;
 
 	static Predicate delegate() metafactory(bool delegate(_Object) callback)
 	{

@@ -159,9 +159,15 @@ public final class InsnDecoder
 	private static void visitAThrow(MethodState state) throws IOException
 	{
 		var expression = state.popFromStack();
-		state.getWriter().writeln("throw " + expression);
+		state.getWriter().writeln("throwJavaException(" + expression + ")");
 	}
 	
+	private static void visitPrimitiveCast(MethodState state, String type)
+	{
+		var expression = state.popFromStack();
+		state.pushToStack("(cast(" + type + ") " + expression + ")");
+	}
+
 	public static void visit(MethodState state, int opcode)
 	{
 		try
@@ -240,6 +246,9 @@ public final class InsnDecoder
 					break;
 				case Opcodes.IAND:
 					visitAnd(state);
+					break;
+				case Opcodes.I2F:
+					visitPrimitiveCast(state, "float");
 					break;
 				default:
 					throw new UnsupportedOperationException(String.format("Unknown method: 0x%02X", opcode));

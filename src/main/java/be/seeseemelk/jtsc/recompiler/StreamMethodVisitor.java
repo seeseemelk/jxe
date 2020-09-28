@@ -16,6 +16,7 @@ import be.seeseemelk.jtsc.instructions.IntegerIncrementInstruction;
 import be.seeseemelk.jtsc.instructions.InvokeDynamicInstruction;
 import be.seeseemelk.jtsc.instructions.LoadConstantInstruction;
 import be.seeseemelk.jtsc.instructions.MethodCallInstruction;
+import be.seeseemelk.jtsc.instructions.TypeInstruction;
 import be.seeseemelk.jtsc.instructions.UnconditionalInstruction;
 import be.seeseemelk.jtsc.instructions.VarInstruction;
 import be.seeseemelk.jtsc.instructions.ZeroArgInstruction;
@@ -90,7 +91,7 @@ public class StreamMethodVisitor extends MethodVisitor
 	@Override
 	public void visitTypeInsn(int opcode, String type)
 	{
-		throw new UnsupportedOperationException("Not implemented");
+		stream.add(new TypeInstruction(opcode, type));
 	}
 	
 	@Override

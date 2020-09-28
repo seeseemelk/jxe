@@ -10,12 +10,14 @@ import be.seeseemelk.jtsc.decoders.InsnDecoder;
 import be.seeseemelk.jtsc.decoders.JumpInsnDecoder;
 import be.seeseemelk.jtsc.decoders.LdcInsnDecoder;
 import be.seeseemelk.jtsc.decoders.MethodInsnDecoder;
+import be.seeseemelk.jtsc.decoders.TypeInsnDecoder;
 import be.seeseemelk.jtsc.decoders.VarInsnDecoder;
 import be.seeseemelk.jtsc.instructions.FieldInstruction;
 import be.seeseemelk.jtsc.instructions.Instruction;
 import be.seeseemelk.jtsc.instructions.InvokeDynamicInstruction;
 import be.seeseemelk.jtsc.instructions.LoadConstantInstruction;
 import be.seeseemelk.jtsc.instructions.MethodCallInstruction;
+import be.seeseemelk.jtsc.instructions.TypeInstruction;
 import be.seeseemelk.jtsc.instructions.VarInstruction;
 import be.seeseemelk.jtsc.instructions.ZeroArgInstruction;
 import be.seeseemelk.jtsc.instructions.tree.BasicInstructionNode;
@@ -175,6 +177,8 @@ public class TreeWriter
 			writeLoadConstantInstruction((LoadConstantInstruction) instruction);
 		else if (instruction instanceof InvokeDynamicInstruction)
 			writeInvokeDynamicInstruction((InvokeDynamicInstruction) instruction);
+		else if (instruction instanceof TypeInstruction)
+			writeTypeInstruction((TypeInstruction) instruction);
 		else
 			throw new RuntimeException(
 					"Unsupported instruction type: "
@@ -225,6 +229,15 @@ public class TreeWriter
 				instruction.getDescriptor(),
 				instruction.getBootstrapMethodHandle(),
 				instruction.getBootstrapMethodArguments()
+		);
+	}
+	
+	private void writeTypeInstruction(TypeInstruction instruction)
+	{
+		TypeInsnDecoder.visit(
+				state,
+				instruction.getOpcode(),
+				instruction.getType()
 		);
 	}
 }
