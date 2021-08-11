@@ -1,4 +1,5 @@
 TESTS = $(patsubst %/Makefile,%,$(wildcard */Makefile))
+SUFFIX ?=
 
 .PHONY: help
 help:
@@ -13,7 +14,7 @@ test: $(TESTS)
 
 .PHONY: test-instrumented
 test-instrumented:
-	$(MAKE) JAVA_ARGS=--only-instrumented test
+	$(MAKE) JAVA_ARGS=--only-instrumented SUFFIX=_instrumented test
 
 .PHONY: test-all
 test-all:
