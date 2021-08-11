@@ -35,6 +35,16 @@ final class Array(T) : _Object
 			content ~= element;
 		}
 	}
+
+	size_t length() const
+	{
+		return content.length;
+	}
+
+	T opIndex(size_t index) inout
+	{
+		return cast(T) content[index];
+	}
 }
 
 T[] clone(T)(T[] t)
