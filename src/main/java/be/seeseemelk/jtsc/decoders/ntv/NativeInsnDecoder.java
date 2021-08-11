@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc.decoders;
+package be.seeseemelk.jtsc.decoders.ntv;
 
 import java.io.IOException;
 
@@ -6,16 +6,23 @@ import org.objectweb.asm.Opcodes;
 
 import be.seeseemelk.jtsc.recompiler.MethodState;
 
-public final class InsnDecoder
+public final class NativeInsnDecoder
 {
-	private InsnDecoder()
+	private NativeInsnDecoder()
 	{
 	}
 	
 	private static void visitReturn(MethodState state) throws IOException
 	{
 		writeStackAsStatement(state);
-		state.getWriter().writeln("return;");
+		if (state.isConstructor())
+		{
+			state.getWriter().writeln("return this;");
+		}
+		else
+		{
+			state.getWriter().writeln("return;");
+		}
 	}
 	
 	private static void visitNReturn(MethodState state) throws IOException

@@ -4,10 +4,10 @@ import java.lang.Object;
 
 unittest
 {
-	TestClass.__new();
+	assert(TestClass.count(0) == 0);
 }
 
 unittest
 {
-	assert(is(TestClass : _Object));
+	assert(TestClass.count(2) == 3);
 }

@@ -21,7 +21,7 @@ final class String : _Object
         return str;
     }
 
-    static String[] fromArray(string[] args)
+    static Array!String fromArray(string[] args)
     {
         return args
             .map!(arg => new String(arg))

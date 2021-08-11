@@ -14,6 +14,27 @@ abstract class _Object : Object
 	this()
 	{
 	}
+
+	void __construct()
+	{
+	}
+}
+
+final class Array(T) : _Object
+{
+	private _Object[] content;
+
+	this()
+	{
+	}
+
+	this(T[] elements)
+	{
+		foreach (element; elements)
+		{
+			content ~= element;
+		}
+	}
 }
 
 T[] clone(T)(T[] t)

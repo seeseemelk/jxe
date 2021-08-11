@@ -1,13 +1,13 @@
-package be.seeseemelk.jtsc.decoders;
+package be.seeseemelk.jtsc.decoders.ntv;
 
 import org.objectweb.asm.Type;
 
 import be.seeseemelk.jtsc.recompiler.MethodState;
 import be.seeseemelk.jtsc.recompiler.Utils;
 
-public final class LdcInsnDecoder
+public final class NativeLdcInsnDecoder
 {
-	private LdcInsnDecoder() {}
+	private NativeLdcInsnDecoder() {}
 	
 	public static void visit(MethodState state, Object value)
 	{

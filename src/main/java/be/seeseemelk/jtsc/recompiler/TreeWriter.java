@@ -1,19 +1,16 @@
 package be.seeseemelk.jtsc.recompiler;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.errorprone.annotations.Var;
-
-import be.seeseemelk.jtsc.decoders.FieldInsnDecoder;
-import be.seeseemelk.jtsc.decoders.InsnDecoder;
-import be.seeseemelk.jtsc.decoders.JumpInsnDecoder;
-import be.seeseemelk.jtsc.decoders.LdcInsnDecoder;
-import be.seeseemelk.jtsc.decoders.MethodInsnDecoder;
-import be.seeseemelk.jtsc.decoders.TypeInsnDecoder;
-import be.seeseemelk.jtsc.decoders.VarInsnDecoder;
+import be.seeseemelk.jtsc.decoders.ntv.NativeFieldInsnDecoder;
+import be.seeseemelk.jtsc.decoders.ntv.NativeInsnDecoder;
+import be.seeseemelk.jtsc.decoders.ntv.NativeIntInsnDecoder;
+import be.seeseemelk.jtsc.decoders.ntv.NativeJumpInsnDecoder;
+import be.seeseemelk.jtsc.decoders.ntv.NativeLdcInsnDecoder;
+import be.seeseemelk.jtsc.decoders.ntv.NativeMethodInsnDecoder;
+import be.seeseemelk.jtsc.decoders.ntv.NativeTypeInsnDecoder;
+import be.seeseemelk.jtsc.decoders.ntv.NativeVarInsnDecoder;
 import be.seeseemelk.jtsc.instructions.FieldInstruction;
 import be.seeseemelk.jtsc.instructions.Instruction;
+import be.seeseemelk.jtsc.instructions.IntInstruction;
 import be.seeseemelk.jtsc.instructions.InvokeDynamicInstruction;
 import be.seeseemelk.jtsc.instructions.LoadConstantInstruction;
 import be.seeseemelk.jtsc.instructions.MethodCallInstruction;
@@ -30,15 +27,15 @@ public class TreeWriter
 	private InstructionTree tree;
 	private SourceWriter writer;
 	private MethodState state;
-	private MethodDescriptor descriptor;
-
+	private BaseWriter baseWriter;
+	
 	public TreeWriter(InstructionTree tree, SourceWriter writer, MethodDescriptor descriptor)
 	{
 		this.tree = tree;
 		this.writer = writer;
-		this.descriptor = descriptor;
 		state = new MethodState(writer);
 		state.setMethodStatic(descriptor.isStatic());
+		baseWriter = new BaseWriter(writer, descriptor);
 	}
 	
 	public InstructionTree getTree()
@@ -53,74 +50,11 @@ public class TreeWriter
 	
 	public void write()
 	{
-		writePrelude();
+		baseWriter.writePrelude();
 		InstructionNode node = tree.getStart();
 		if (node != null)
 			writeNode(node);
-		writePostlude();
-	}
-	
-	private void writePrelude()
-	{
-		List<String> keywords = new ArrayList<>();
-		
-		if (!descriptor.isStaticInitializer())
-		{
-			switch (descriptor.getVisibility())
-			{
-				case PRIVATE:
-					keywords.add("private ");
-					break;
-				case PACKAGE:
-					System.err.println("Warning: PACKAGE visibility is not supported, using PUBLIC instead");
-				case PUBLIC:
-					keywords.add("public ");
-					break;
-				case PROTECTED:
-					keywords.add("protected ");
-					break;
-			}
-		}
-		
-		if (descriptor.isStatic() || descriptor.isStaticInitializer())
-			keywords.add("static ");
-		
-		if (descriptor.isConstructor() || descriptor.isStaticInitializer())
-			keywords.add("this");
-		else
-		{
-			keywords.add(descriptor.getReturnType());
-			keywords.add(" ");
-			keywords.add(descriptor.getName());
-		}
-		
-		keywords.add("(");
-		
-		int argCount = 0;
-		// Non-static functions have a 'this' parameter at index 0.
-		int offset = descriptor.isStatic() ? 0 : 1;
-		for (var arg : descriptor.getArguments())
-		{
-			keywords.add(Utils.getClassName(arg));
-			keywords.add(" ");
-			keywords.add(state.getVariableName(argCount + offset));
-			argCount++;
-			if (argCount < descriptor.getArguments().size())
-				keywords.add(", ");
-		}
-		
-		keywords.add(") ");
-		keywords.add("{");
-		
-		writer.writelnUnsafe(String.join("", keywords));
-		writer.indent();
-	}
-	
-	private void writePostlude()
-	{
-		writer.undent();
-		writer.writelnUnsafe("}");
-		writer.writelnUnsafe();
+		baseWriter.writePostlude();
 	}
 	
 	private void writeNode(InstructionNode node)
@@ -151,7 +85,7 @@ public class TreeWriter
 	{
 		var instr = node.getInstruction();
 		writer.writeUnsafe("if (");
-		JumpInsnDecoder.visit(state, instr.getOpcode());
+		NativeJumpInsnDecoder.visit(state, instr.getOpcode());
 		writer.writelnUnsafe(") {");
 		writer.indent();
 		writeNode(node.getTrueBranch());
@@ -179,6 +113,8 @@ public class TreeWriter
 			writeInvokeDynamicInstruction((InvokeDynamicInstruction) instruction);
 		else if (instruction instanceof TypeInstruction)
 			writeTypeInstruction((TypeInstruction) instruction);
+		else if (instruction instanceof IntInstruction)
+			writeIntInstruction((IntInstruction) instruction);
 		else
 			throw new RuntimeException(
 					"Unsupported instruction type: "
@@ -187,12 +123,12 @@ public class TreeWriter
 	
 	private void writeZeroArgInstruction(ZeroArgInstruction instruction)
 	{
-		InsnDecoder.visit(state, instruction.getOpcode());
+		NativeInsnDecoder.visit(state, instruction.getOpcode());
 	}
 	
 	private void writeMethodCallInstruction(MethodCallInstruction instruction)
 	{
-		MethodInsnDecoder.visit(
+		NativeMethodInsnDecoder.visit(
 				state,
 				instruction.getOpcode(),
 				instruction.getOwner(),
@@ -203,12 +139,12 @@ public class TreeWriter
 	
 	private void writeVarInstruction(VarInstruction instruction)
 	{
-		VarInsnDecoder.visit(state, instruction.getOpcode(), instruction.getVar());
+		NativeVarInsnDecoder.visit(state, instruction.getOpcode(), instruction.getVar());
 	}
 
 	private void writeFieldInstruction(FieldInstruction instruction)
 	{
-		FieldInsnDecoder.visit(
+		NativeFieldInsnDecoder.visit(
 				state,
 				instruction.getOpcode(),
 				instruction.getOwner(),
@@ -218,12 +154,12 @@ public class TreeWriter
 	
 	private void writeLoadConstantInstruction(LoadConstantInstruction instruction)
 	{
-		LdcInsnDecoder.visit(state, instruction.getValue());
+		NativeLdcInsnDecoder.visit(state, instruction.getValue());
 	}
 	
 	private void writeInvokeDynamicInstruction(InvokeDynamicInstruction instruction)
 	{
-		MethodInsnDecoder.visitDynamic(
+		NativeMethodInsnDecoder.visitDynamic(
 				state,
 				instruction.getName(),
 				instruction.getDescriptor(),
@@ -234,11 +170,16 @@ public class TreeWriter
 	
 	private void writeTypeInstruction(TypeInstruction instruction)
 	{
-		TypeInsnDecoder.visit(
+		NativeTypeInsnDecoder.visit(
 				state,
 				instruction.getOpcode(),
 				instruction.getType()
 		);
+	}
+	
+	private void writeIntInstruction(IntInstruction instruction)
+	{
+		NativeIntInsnDecoder.visit(state, instruction);
 	}
 }
 

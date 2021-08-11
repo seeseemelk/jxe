@@ -1,15 +1,14 @@
-package be.seeseemelk.jtsc.decoders;
+package be.seeseemelk.jtsc.decoders.ntv;
 
 import java.io.IOException;
 
-import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 
 import be.seeseemelk.jtsc.recompiler.MethodState;
 
-public final class JumpInsnDecoder
+public final class NativeJumpInsnDecoder
 {
-	private JumpInsnDecoder() {}
+	private NativeJumpInsnDecoder() {}
 	
 	private static void visitIfICmp(MethodState state, String operator) throws IOException
 	{

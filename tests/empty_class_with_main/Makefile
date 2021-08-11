@@ -3,7 +3,7 @@ CLASSES = $(SRC:src/%.java=bin/%.class)
 
 .PHONY: test
 test: $(CLASSES)
-	java -jar ../../build/libs/jtsc.jar bin conv
+	java -jar ../../build/libs/jtsc.jar $(JAVA_ARGS) bin conv
 	cp tests.d conv/source
 	cd conv && dub test
 

@@ -12,11 +12,13 @@ public class Recompiler
 {
 	private final Path outputDirectory;
 	private final Path sourceDirectory;
+	private final Instrumentation instrumentation;
 	
-	public Recompiler(Path outputDirectory) throws IOException
+	public Recompiler(Path outputDirectory, Instrumentation instrumentation) throws IOException
 	{
 		this.outputDirectory = outputDirectory;
 		this.sourceDirectory = outputDirectory.resolve("source");
+		this.instrumentation = instrumentation;
 		Files.createDirectories(outputDirectory);
 		Files.createDirectories(sourceDirectory);
 		createBuildScript("some_project");
@@ -29,7 +31,7 @@ public class Recompiler
 		var imports = new ImportFinder();
 		reader.accept(imports, ClassReader.SKIP_DEBUG);
 		
-		var firstPass = new DClassVisitor(sourceDirectory, imports.getImports());
+		var firstPass = new DClassVisitor(sourceDirectory, imports.getImports(), instrumentation);
 		reader.accept(firstPass, ClassReader.SKIP_DEBUG);
 	}
 	

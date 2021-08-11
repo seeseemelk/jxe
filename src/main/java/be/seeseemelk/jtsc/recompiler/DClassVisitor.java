@@ -23,12 +23,14 @@ public class DClassVisitor extends ClassVisitor
 	private Set<String> imports;
 	private String className;
 	private boolean hasMain = false;
+	private final Instrumentation instrumentation;
 	
-	public DClassVisitor(Path rootDirectory, Set<String> imports)
+	public DClassVisitor(Path rootDirectory, Set<String> imports, Instrumentation instrumentation)
 	{
 		super(Opcodes.ASM7);
 		this.rootDirectory = rootDirectory;
 		this.imports = imports;
+		this.instrumentation = instrumentation;
 	}
 
 	@Override
@@ -73,6 +75,20 @@ public class DClassVisitor extends ClassVisitor
 			writer.writeln(Utils.accessorToString(access), " class ", className, " : ", superClassName, " {");
 			writer.indent();
 			writer.writeln("mixin autoReflector!" + className + ";");
+			writer.writeln();
+			writer.writeln("private this() {");
+			writer.indent();
+			writer.writeln("super();");
+			writer.undent();
+			writer.writeln("}");
+			writer.writeln();
+			writer.writeln("static " + className + " __new(T...)(T t) {");
+			writer.indent();
+			writer.writeln("auto obj = new " + className + ";");
+			writer.writeln("obj.__construct(t);");
+			writer.writeln("return obj;");
+			writer.undent();
+			writer.writeln("}");
 			writer.writeln();
 		}
 		catch (IOException e)
@@ -122,6 +138,8 @@ public class DClassVisitor extends ClassVisitor
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions)
 	{
+		System.out.println("METHOD " + name);
+		
 		var methodDescriptor = new MethodDescriptor();
 		methodDescriptor.setFromAccess(access);
 		methodDescriptor.setName(Utils.identifierToD(name));
@@ -137,13 +155,34 @@ public class DClassVisitor extends ClassVisitor
 		var visitor = new StreamMethodVisitor();
 		visitor.setCallback(stream ->
 		{
-			var tree = InstructionTree.from(stream);
-			var treeWriter = new TreeWriter(tree, writer, methodDescriptor);
-			treeWriter.write();
+			writeStream(stream, methodDescriptor);
 		});
 		return visitor;
 	}
 	
+	private void writeStream(InstructionStream stream, MethodDescriptor methodDescriptor)
+	{
+		switch (instrumentation)
+		{
+			case BOTH:
+				try
+				{
+					NativeTreeWriter.write(stream, methodDescriptor, writer);
+				}
+				catch (FlowAnalysisException e)
+				{
+					InstrumentedStreamWriter.write(stream, methodDescriptor, writer);
+				}
+				break;
+			case NATIVE:
+				NativeTreeWriter.write(stream, methodDescriptor, writer);
+				break;
+			case INSTRUMENTED:
+				InstrumentedStreamWriter.write(stream, methodDescriptor, writer);
+				break;
+		}
+	}
+
 	@Override
 	public void visitEnd()
 	{

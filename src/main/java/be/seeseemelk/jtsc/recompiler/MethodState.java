@@ -18,6 +18,7 @@ public class MethodState
 	private int nextLocalVariable = 0;
 	private final SourceWriter writer;
 	private boolean isStatic = false;
+	private boolean isConstructor = false;
 	private Map<Label, String> labels = new HashMap<>();
 	private int nextLabelId = 0;
 	
@@ -125,6 +126,26 @@ public class MethodState
 	public void setMethodStatic(boolean isStatic)
 	{
 		this.isStatic = isStatic;
+	}
+	
+	/**
+	 * Chets whether the method this object is describing is a constructor or not.
+	 * 
+	 * @return `true` if the mergod is a constructor, `false` if it is not.
+	 */
+	public boolean isConstructor()
+	{
+		return isConstructor;
+	}
+	
+	/**
+	 * Sets whether the method is a constructor or not.
+	 * 
+	 * @param isConstructor `true` if the method is a constructor, `false` if it is not.
+	 */
+	public void setConstructor(boolean isConstructor)
+	{
+		this.isConstructor = isConstructor;
 	}
 	
 	/**

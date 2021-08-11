@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc.decoders;
+package be.seeseemelk.jtsc.decoders.ntv;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -11,9 +11,9 @@ import org.objectweb.asm.Type;
 import be.seeseemelk.jtsc.recompiler.MethodState;
 import be.seeseemelk.jtsc.recompiler.Utils;
 
-public final class MethodInsnDecoder
+public final class NativeMethodInsnDecoder
 {
-	private MethodInsnDecoder() {}
+	private NativeMethodInsnDecoder() {}
 	
 	private static void visitInvokeSpecial(MethodState state, int opcode, String owner, String descriptor) throws IOException
 	{
@@ -32,7 +32,7 @@ public final class MethodInsnDecoder
 			String objectRef = state.popFromStack(); // Pop 'this' reference
 			if (objectRef.equals("this"))
 			{
-				keywords.push("super");
+				keywords.push("super.__construct");
 			}
 			else
 			{

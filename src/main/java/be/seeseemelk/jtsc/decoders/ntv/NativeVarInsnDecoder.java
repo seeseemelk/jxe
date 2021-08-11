@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc.decoders;
+package be.seeseemelk.jtsc.decoders.ntv;
 
 import java.io.IOException;
 
@@ -6,9 +6,9 @@ import org.objectweb.asm.Opcodes;
 
 import be.seeseemelk.jtsc.recompiler.MethodState;
 
-public final class VarInsnDecoder
+public final class NativeVarInsnDecoder
 {
-	private VarInsnDecoder () {}
+	private NativeVarInsnDecoder () {}
 	
 	private static void visitALoad(MethodState state, int var)
 	{

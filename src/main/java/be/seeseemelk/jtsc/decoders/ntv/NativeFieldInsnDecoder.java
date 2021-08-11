@@ -1,4 +1,4 @@
-package be.seeseemelk.jtsc.decoders;
+package be.seeseemelk.jtsc.decoders.ntv;
 
 import java.io.IOException;
 
@@ -7,9 +7,9 @@ import org.objectweb.asm.Opcodes;
 import be.seeseemelk.jtsc.recompiler.MethodState;
 import be.seeseemelk.jtsc.recompiler.Utils;
 
-public final class FieldInsnDecoder
+public final class NativeFieldInsnDecoder
 {
-	private FieldInsnDecoder()
+	private NativeFieldInsnDecoder()
 	{
 	}
 	

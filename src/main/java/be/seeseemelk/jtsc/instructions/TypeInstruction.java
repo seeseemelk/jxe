@@ -1,7 +1,5 @@
 package be.seeseemelk.jtsc.instructions;
 
-import org.objectweb.asm.Type;
-
 public class TypeInstruction extends OpcodeInstruction
 {
 	private String type;

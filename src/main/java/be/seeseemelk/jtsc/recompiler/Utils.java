@@ -83,7 +83,8 @@ public class Utils
 	private static String arrayTypeToName(String name)
 	{
 		var base = name.substring(1);
-		return typeToName(base) + "[]";
+		//return typeToName(base) + "[]";
+		return "Array!" + typeToName(base);
 	}
 	
 	public static boolean isStatic(int accessor)

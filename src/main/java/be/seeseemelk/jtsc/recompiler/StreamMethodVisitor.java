@@ -12,6 +12,7 @@ import org.objectweb.asm.TypePath;
 
 import be.seeseemelk.jtsc.instructions.ConditionalInstruction;
 import be.seeseemelk.jtsc.instructions.FieldInstruction;
+import be.seeseemelk.jtsc.instructions.IntInstruction;
 import be.seeseemelk.jtsc.instructions.IntegerIncrementInstruction;
 import be.seeseemelk.jtsc.instructions.InvokeDynamicInstruction;
 import be.seeseemelk.jtsc.instructions.LoadConstantInstruction;
@@ -133,7 +134,7 @@ public class StreamMethodVisitor extends MethodVisitor
 	@Override
 	public void visitIntInsn(int opcode, int operand)
 	{
-		throw new UnsupportedOperationException("Not implemented");
+		stream.add(new IntInstruction(opcode, operand));
 	}
 	
 	@Override

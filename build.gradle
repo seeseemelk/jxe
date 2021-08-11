@@ -22,8 +22,8 @@ repositories {
 
 dependencies {
     implementation 'com.google.guava:guava:28.2-jre'
-	implementation 'org.ow2.asm:asm:8.0.1'
-	implementation 'org.ow2.asm:asm-tree:8.0.1'
+	implementation 'org.ow2.asm:asm:9.0'
+	implementation 'org.ow2.asm:asm-tree:9.0'
 
     // Use JUnit Jupiter API for testing.
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
@@ -62,7 +62,7 @@ task integration(group: "Verification", description: "Run integration tests") {
 	doLast {
 		exec {
 			workingDir "tests"
-			commandLine "make"
+			commandLine "make test-all"
 		}
 	}
 }

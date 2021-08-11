@@ -24,17 +24,17 @@ public class InstructionTree
 		return start;
 	}
 	
-	public static InstructionTree from(InstructionStream stream)
+	public static InstructionTree from(InstructionStream stream) throws FlowAnalysisException
 	{
 		var tree = new InstructionTree();
 		tree.start = nodesFrom(stream, 0);
 		return tree;
 	}
-	
+
 	private static InstructionNode nodesFrom(
 			InstructionStream stream,
 			int index
-	)
+	) throws FlowAnalysisException
 	{
 		Instruction instr = stream.get(index);
 		if (isReturn(instr))
@@ -46,7 +46,7 @@ public class InstructionTree
 		{
 			var cond = (ConditionalInstruction) instr;
 			int target = stream.getIndex(cond.getTarget());
-			
+
 			var node = new ConditionalInstructionNode(cond);
 			node.setTrueBranch(nodesFrom(stream, target));
 			node.setFalseBranch(nodesFrom(stream, index + 1));
@@ -56,7 +56,14 @@ public class InstructionTree
 		{
 			var jump = (UnconditionalInstruction) instr;
 			int target = stream.getIndex(jump.getTarget());
-			return nodesFrom(stream, target);
+			if (target > index)
+			{
+				return nodesFrom(stream, target);
+			}
+			else
+			{
+				throw new FlowAnalysisException("Jump from index " + index + " to " + target);
+			}
 		}
 		else
 		{
