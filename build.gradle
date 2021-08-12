@@ -5,9 +5,7 @@ plugins {
 }
 
 repositories {
-    // Use jcenter for resolving dependencies.
-    // You can declare any Maven/Ivy/file repository here.
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
@@ -22,23 +20,17 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
 }
 
-java {
-	sourceCompatibility = JavaVersion.VERSION_11
-	targetCompatibility = JavaVersion.VERSION_11
+tasks.withType(JavaCompile) {
+    options.release.set(16)
 }
 
 application {
-    // Define the main class for the application.
-    mainClassName = 'be.seeseemelk.jtsc.App'
+	mainClass = 'be.seeseemelk.jtsc.App'
 }
 
 jar {
 	manifest {
-		attributes "Main-Class": "be.seeseemelk.jtsc.App"
-	}
-	
-	from {
-		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+		attributes 'Main-Class': 'be.seeseemelk.jtsc.App'
 	}
 }
 
