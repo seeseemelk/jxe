@@ -29,4 +29,4 @@ $(TESTS): build-jxe
 
 .PHONY: build-jxe
 build-jxe:
-	cd .. && ./gradlew jar
+	cd .. && ./gradlew shadowJar

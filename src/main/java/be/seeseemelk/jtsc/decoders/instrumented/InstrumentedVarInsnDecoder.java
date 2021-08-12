@@ -17,30 +17,29 @@ public class InstrumentedVarInsnDecoder
 		try
 		{
 			String varName = getVarName(descriptor, var);
-			
+
 			switch (opcode)
 			{
 				case Opcodes.ALOAD:
-					writer.writelnUnsafe("aload(vars, ", varName, ");");
+					writer.writelnUnsafe("vars ~= JavaVar.ofObject(", varName, ");");
+					writer.writelnUnsafe("varsTop++;");
 					break;
-				case Opcodes.ILOAD:
-					writer.writelnUnsafe("iload(vars, ", varName, ");");
-					break;
-					/*
-				case Opcodes.DLOAD:
-				case Opcodes.FLOAD:
-				case Opcodes.LLOAD:
-					visitLoad(state, var);
-					break;
-				case Opcodes.ISTORE:
-				case Opcodes.LSTORE:
-				case Opcodes.FSTORE:
-				case Opcodes.DSTORE:
-				case Opcodes.ASTORE:
-					visitStore(state, var);
-					break;
-				case Opcodes.RET:
-				//*/
+//				case Opcodes.ILOAD:
+//					writer.writelnUnsafe("iload(vars, ", varName, ");");
+//					break;
+//				case Opcodes.DLOAD:
+//				case Opcodes.FLOAD:
+//				case Opcodes.LLOAD:
+//					visitLoad(state, var);
+//					break;
+//				case Opcodes.ISTORE:
+//				case Opcodes.LSTORE:
+//				case Opcodes.FSTORE:
+//				case Opcodes.DSTORE:
+//				case Opcodes.ASTORE:
+//					visitStore(state, var);
+//					break;
+//				case Opcodes.RET:
 				default:
 					throw new UnsupportedOperationException("Unknown opcode: " + opcode + ", " + var);
 			}
@@ -53,7 +52,7 @@ public class InstrumentedVarInsnDecoder
 					e);
 		}
 	}
-	
+
 	private static String getVarName(MethodDescriptor descriptor, int var)
 	{
 		if (descriptor.isStatic())

@@ -9,6 +9,7 @@ import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedVarInsnDecoder;
 import be.seeseemelk.jtsc.instructions.ConditionalInstruction;
 import be.seeseemelk.jtsc.instructions.FieldInstruction;
 import be.seeseemelk.jtsc.instructions.Instruction;
+import be.seeseemelk.jtsc.instructions.InvokeDynamicInstruction;
 import be.seeseemelk.jtsc.instructions.MethodCallInstruction;
 import be.seeseemelk.jtsc.instructions.UnconditionalInstruction;
 import be.seeseemelk.jtsc.instructions.VarInstruction;
@@ -19,7 +20,7 @@ public final class InstrumentedStreamWriter
 	private final SourceWriter writer;
 	private final MethodDescriptor descriptor;
 	private final InstructionStream stream;
-	
+
 	private InstrumentedStreamWriter(
 		SourceWriter writer,
 		MethodDescriptor descriptor,
@@ -39,11 +40,12 @@ public final class InstrumentedStreamWriter
 		streamWriter.writeBody();
 		baseWriter.writePostlude();
 	}
-	
+
 	private void writeBody()
 	{
 		writer.writelnUnsafe("import java.lang.instrumentation;");
 		writer.writelnUnsafe("JavaVar[] vars;");
+		writer.writelnUnsafe("size_t varsTop = 0;");
 		writer.writelnUnsafe("size_t address = 0;");
 		writer.writelnUnsafe("for (;;) {");
 		writer.indent();
@@ -109,9 +111,20 @@ public final class InstrumentedStreamWriter
 					instr.getDescriptor()
 			);
 		}
+		else if (instruction instanceof InvokeDynamicInstruction)
+		{
+			InvokeDynamicInstruction instr = (InvokeDynamicInstruction) instruction;
+			InstrumentedMethodInsnDecoder.visitDynamic(
+					writer,
+					instr.getName(),
+					instr.getDescriptor(),
+					instr.getBootstrapMethodHandle(),
+					instr.getBootstrapMethodArguments()
+			);
+		}
 		else
 			throw new RuntimeException("Unknown instruction of type " + instruction.getClass().getSimpleName());
-		
+
 		if (instruction instanceof UnconditionalInstruction)
 		{
 			var uncond = (UnconditionalInstruction) instruction;
@@ -125,7 +138,7 @@ public final class InstrumentedStreamWriter
 			writer.writelnUnsafe("break;");
 		}
 	}
-	
+
 	private boolean isReturn(Instruction instruction)
 	{
 		if (instruction instanceof ZeroArgInstruction)

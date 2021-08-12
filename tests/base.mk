@@ -1,4 +1,4 @@
-JXE ?= java -jar ../../build/libs/jxe.jar
+JXE ?= java -jar ../../build/libs/jxe-all.jar
 SRC = $(shell find src -iname '*.java')
 SUFFIX ?=
 CLASSES = $(SRC:src/%.java=bin$(SUFFIX)/%.class)
