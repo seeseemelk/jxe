@@ -1,4 +1,5 @@
 TESTS = $(patsubst %/Makefile,%,$(wildcard */Makefile))
+TESTS_INSTRUMENTED = $(patsubst %/Makefile,%-instrumented,$(wildcard */Makefile))
 SUFFIX ?=
 
 .PHONY: help
@@ -13,19 +14,22 @@ help:
 test: $(TESTS)
 
 .PHONY: test-instrumented
-test-instrumented:
-	$(MAKE) JAVA_ARGS=--only-instrumented SUFFIX=_instrumented test
+test-instrumented: $(TESTS_INSTRUMENTED)
 
 .PHONY: test-all
-test-all:
-	$(MAKE) test
-	$(MAKE) test-instrumented
+test-all: test test-instrumented
 
 .PHONY: $(TESTS)
 $(TESTS): build-jxe
 	@echo "   ==== Running test $@ ===="
 	$(MAKE) -C $@
 	@echo "   ==== Finished test ===="
+
+.PHONY: $(TESTS_INSTRUMENTED)
+$(TESTS_INSTRUMENTED): build-jxe
+	@echo "   ==== Running instrumented test $@ ===="
+	$(MAKE) -C $(@:%-instrumented=%) test-instrumented
+	@echo "   ==== Finished instrumented test ===="
 
 .PHONY: build-jxe
 build-jxe:

@@ -9,5 +9,11 @@ test: $(CLASSES)
 	cp tests.d conv$(SUFFIX)/source
 	cd conv$(SUFFIX) && dub test
 
+.PHONY: test-instrumented
+test-instrumented: $(CLASSES)
+	$(JXE) $(JAVA_ARGS) --only-instrumented bin$(SUFFIX) conv$(SUFFIX)
+	cp tests.d conv/source
+	cd conv && dub test
+
 bin$(SUFFIX)/%.class: src/%.java
 	javac -d bin$(SUFFIX) $^
