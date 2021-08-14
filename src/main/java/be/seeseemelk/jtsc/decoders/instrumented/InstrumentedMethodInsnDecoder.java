@@ -7,6 +7,7 @@ import org.objectweb.asm.Opcodes;
 
 import be.seeseemelk.jtsc.recompiler.MethodDescriptor;
 import be.seeseemelk.jtsc.recompiler.SourceWriter;
+import be.seeseemelk.jtsc.recompiler.Utils;
 
 public final class InstrumentedMethodInsnDecoder
 {
@@ -68,10 +69,10 @@ public final class InstrumentedMethodInsnDecoder
 				case Opcodes.INVOKESPECIAL:
 					visitInvokeSpecial(methodDescriptor, writer, opcode, owner, descriptor);
 				break;
-//				case Opcodes.INVOKEVIRTUAL:
-//				case Opcodes.INVOKEINTERFACE:
-//					visitInvokeVirtual(methodDescriptor, writer);
-//				break;
+				case Opcodes.INVOKEVIRTUAL:
+				case Opcodes.INVOKEINTERFACE:
+					visitInvokeVirtual(methodDescriptor, writer);
+				break;
 //				case Opcodes.INVOKESTATIC:
 //					visitInvokeStatic(state, Utils.identifierToD(owner), Utils.identifierToD(name), descriptor);
 //				break;
@@ -87,6 +88,13 @@ public final class InstrumentedMethodInsnDecoder
 					opcode, owner, name, descriptor, isInterface ? "true" : "false"),
 					e);
 		}
+	}
+
+	private static void visitInvokeVirtual(MethodDescriptor methodDescriptor, SourceWriter writer)
+	{
+		var type = Utils.typeToName(methodDescriptor.getClassName());
+		var method = methodDescriptor.getName();
+		writer.writelnUnsafe("(cast(",type,") vars[$-1]).",method,"();");
 	}
 
 	public static void visitDynamic(

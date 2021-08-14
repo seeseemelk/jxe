@@ -12,7 +12,8 @@ public final class InstrumentedFieldInsnDecoder
 	private static void visitPutStatic(SourceWriter writer, String owner, String name, String descriptor)
 	{
 		var type = Utils.typeToName(descriptor);
-		writer.writelnUnsafe(owner + "." + name + " = cast(" + type + ") vars.popObject();");
+		writer.writelnUnsafe(owner + "." + name + " = cast(" + type + ") vars[$ - 1].asObject;");
+		writer.writelnUnsafe("vars = vars[0 .. $ - 1];");
 	}
 
 	public static void visit(SourceWriter writer, int opcode, String owner, String name, String descriptor)

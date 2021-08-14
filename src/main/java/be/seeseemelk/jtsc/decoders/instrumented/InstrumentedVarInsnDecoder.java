@@ -22,11 +22,10 @@ public class InstrumentedVarInsnDecoder
 			{
 				case Opcodes.ALOAD:
 					writer.writelnUnsafe("vars ~= JavaVar.ofObject(", varName, ");");
-					writer.writelnUnsafe("varsTop++;");
-					break;
-//				case Opcodes.ILOAD:
-//					writer.writelnUnsafe("iload(vars, ", varName, ");");
-//					break;
+				break;
+				case Opcodes.ILOAD:
+					writer.writelnUnsafe("vars ~= ;" ~ JavaVar.ofInteger());
+				break;
 //				case Opcodes.DLOAD:
 //				case Opcodes.FLOAD:
 //				case Opcodes.LLOAD:

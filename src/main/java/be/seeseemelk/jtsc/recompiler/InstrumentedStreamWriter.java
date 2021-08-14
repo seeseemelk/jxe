@@ -45,7 +45,6 @@ public final class InstrumentedStreamWriter
 	{
 		writer.writelnUnsafe("import java.lang.instrumentation;");
 		writer.writelnUnsafe("JavaVar[] vars;");
-		writer.writelnUnsafe("size_t varsTop = 0;");
 		writer.writelnUnsafe("size_t address = 0;");
 		writer.writelnUnsafe("for (;;) {");
 		writer.indent();

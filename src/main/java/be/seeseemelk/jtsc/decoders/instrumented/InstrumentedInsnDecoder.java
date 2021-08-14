@@ -20,7 +20,7 @@ public final class InstrumentedInsnDecoder
 					writer.writelnUnsafe("return;");
 				break;
 				case Opcodes.ARETURN:
-					writer.writelnUnsafe("return vars[varsTop - 1]");
+					writer.writelnUnsafe("return vars[$ - 1];");
 				break;
 //				case Opcodes.IRETURN:
 //				case Opcodes.LRETURN:
