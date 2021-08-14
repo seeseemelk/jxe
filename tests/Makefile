@@ -22,13 +22,13 @@ test-all: test test-instrumented
 .PHONY: $(TESTS)
 $(TESTS): build-jxe
 	@echo "   ==== Running test $@ ===="
-	$(MAKE) -C $@
+	$(MAKE) -C $@ BUILD_JXE=0 test-normal
 	@echo "   ==== Finished test ===="
 
 .PHONY: $(TESTS_INSTRUMENTED)
 $(TESTS_INSTRUMENTED): build-jxe
 	@echo "   ==== Running instrumented test $@ ===="
-	$(MAKE) -C $(@:%-instrumented=%) test-instrumented
+	$(MAKE) -C $(@:%-instrumented=%) BUILD_JXE=0 test-instrumented
 	@echo "   ==== Finished instrumented test ===="
 
 .PHONY: build-jxe
