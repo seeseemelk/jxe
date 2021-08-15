@@ -13,8 +13,9 @@ unittest
 
 unittest
 {
-	auto b = new B;
+	auto b = B.__new();
 	auto a = cast(A) b;
+
 	assert(TestClass.castAToB(a) is b);
 }
 
@@ -22,7 +23,7 @@ unittest
 {
 	try
 	{
-		auto c = new C;
+		auto c = C.__new();
 		TestClass.castAToB(c);
 		assert(0, "Function should have thrown an exception");
 	}
@@ -34,15 +35,15 @@ unittest
 
 unittest
 {
-	assert(TestClass.isA(new A) == true);
+	assert(TestClass.isA(A.__new()) == true);
 }
 
 unittest
 {
-	assert(TestClass.isA(new B) == true);
+	assert(TestClass.isA(B.__new()) == true);
 }
 
 unittest
 {
-	assert(TestClass.isA(new TestClass) == false);
+	assert(TestClass.isA(TestClass.__new()) == false);
 }

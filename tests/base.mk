@@ -23,4 +23,4 @@ ifeq (1,$(BUILD_JXE))
 endif
 
 bin$(SUFFIX)/%.class: src/%.java
-	javac -d bin$(SUFFIX) $^
+	javac -d bin$(SUFFIX) -cp src $^

@@ -1,5 +1,5 @@
-TESTS = $(patsubst %/Makefile,%,$(wildcard */Makefile))
-TESTS_INSTRUMENTED = $(patsubst %/Makefile,%-instrumented,$(wildcard */Makefile))
+TESTS = $(sort $(patsubst %/Makefile,%,$(wildcard */Makefile)))
+TESTS_INSTRUMENTED = $(TESTS:%=%-instrumented)
 SUFFIX ?=
 
 .PHONY: help
