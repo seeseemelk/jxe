@@ -24,7 +24,7 @@ public class DClassVisitor extends ClassVisitor
 	private String className;
 	private boolean hasMain = false;
 	private final Instrumentation instrumentation;
-	
+
 	public DClassVisitor(Path rootDirectory, Set<String> imports, Instrumentation instrumentation)
 	{
 		super(Opcodes.ASM7);
@@ -38,31 +38,31 @@ public class DClassVisitor extends ClassVisitor
 	{
 		super.visit(version, access, name, signature, superName, interfaces);
 		System.out.println("CLASS " + name);
-	
+
 		try
 		{
 			String packageName = Utils.getPackageName(name);
 			className = Utils.getClassName(name);
 			String superClassName = Utils.getClassName(superName);
-			
+
 			Path outputDirectory = rootDirectory.resolve(packageName);
 			Files.createDirectories(outputDirectory);
 			Path outputFile = outputDirectory.resolve(className + ".d");
 			writer = new SourceWriter(Files.newBufferedWriter(outputFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING));
-			
+
 			writer.writeln("// Class name: ", name);
 			writer.writeln("// Version: ", version);
 			writer.writeln("// Access: ", access);
 			if (signature != null)
 				writer.writeln("// Signature: ", signature);
 			writer.writeln("// Super Name: ", superName);
-			
+
 			if (!packageName.isEmpty())
 			{
 				writer.writeln("module ", packageName.replace('/', '.'), ";");
 				writer.writeln();
 			}
-			
+
 			for (String toImport : imports)
 			{
 				if (toImport.equals("java.lang.Object"))
@@ -71,7 +71,7 @@ public class DClassVisitor extends ClassVisitor
 					writer.writeln("import ", toImport, " : ", Utils.getClassName(toImport), ";");
 			}
 			writer.writeln();
-			
+
 			writer.writeln(Utils.accessorToString(access), " class ", className, " : ", superClassName, " {");
 			writer.indent();
 			writer.writeln("mixin autoReflector!" + className + ";");
@@ -96,12 +96,12 @@ public class DClassVisitor extends ClassVisitor
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	@Override
 	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value)
 	{
 		List<String> keywords = new ArrayList<>();
-		
+
 		switch (Visibility.fromAccess(access))
 		{
 			case PACKAGE:
@@ -116,37 +116,37 @@ public class DClassVisitor extends ClassVisitor
 				keywords.add("private ");
 				break;
 		}
-		
+
 		if (Utils.isStatic(access))
 			keywords.add("static ");
-		
+
 		keywords.add(Utils.typeToName(descriptor));
 		keywords.add(" ");
 		keywords.add(Utils.identifierToD(name));
-		
+
 		if (value != null)
 		{
 			keywords.add(" = ");
 			keywords.add(value.toString());
 		}
 		keywords.add(";");
-		
+
 		writer.writelnUnsafe(String.join("", keywords));
 		return null;
 	}
-	
+
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions)
 	{
 		System.out.println("METHOD " + name);
-		
+
 		var methodDescriptor = new MethodDescriptor();
 		methodDescriptor.setFromAccess(access);
 		methodDescriptor.setName(Utils.identifierToD(name));
 		methodDescriptor.setReturnType(Utils.typeToName(Type.getReturnType(descriptor).toString()));
 		methodDescriptor.setArguments(Type.getArgumentTypes(descriptor));
 		methodDescriptor.setClassName(className);
-		
+
 		if (methodDescriptor.isStatic() && name.equals("main"))
 		{
 			hasMain = true;
@@ -159,7 +159,7 @@ public class DClassVisitor extends ClassVisitor
 		});
 		return visitor;
 	}
-	
+
 	private void writeStream(InstructionStream stream, MethodDescriptor methodDescriptor)
 	{
 		switch (instrumentation)
@@ -190,7 +190,7 @@ public class DClassVisitor extends ClassVisitor
 		{
 			writer.undent();
 			writer.write("}\n");
-			
+
 			if (hasMain)
 			{
 				writer.writeln();
@@ -200,7 +200,7 @@ public class DClassVisitor extends ClassVisitor
 				writer.undent();
 				writer.writeln("}");
 			}
-			
+
 			writer.close();
 		}
 		catch (IOException e)

@@ -7,17 +7,17 @@ public class BaseWriter
 {
 	private final SourceWriter writer;
 	private final MethodDescriptor descriptor;
-	
+
 	public BaseWriter(SourceWriter writer, MethodDescriptor descriptor)
 	{
 		this.writer = writer;
 		this.descriptor = descriptor;
 	}
-	
+
 	public void writePrelude()
 	{
 		List<String> keywords = new ArrayList<>();
-		
+
 		if (!descriptor.isStaticInitializer())
 		{
 			switch (descriptor.getVisibility())
@@ -35,10 +35,10 @@ public class BaseWriter
 					break;
 			}
 		}
-		
+
 		if (descriptor.isStatic() || descriptor.isStaticInitializer())
 			keywords.add("static ");
-		
+
 		if (descriptor.isConstructor() || descriptor.isStaticInitializer())
 		{
 			keywords.add("override void");
@@ -50,9 +50,9 @@ public class BaseWriter
 			keywords.add(" ");
 			keywords.add(descriptor.getName());
 		}
-		
+
 		keywords.add("(");
-		
+
 		int argCount = 0;
 		// Non-static functions have a 'this' parameter at index 0.
 		int offset = descriptor.isStatic() ? 0 : 1;
@@ -60,19 +60,19 @@ public class BaseWriter
 		{
 			keywords.add(Utils.getClassName(arg));
 			keywords.add(" ");
-			keywords.add("var" + (argCount + offset));
+			keywords.add("arg" + (argCount + offset));
 			argCount++;
 			if (argCount < descriptor.getArguments().size())
 				keywords.add(", ");
 		}
-		
+
 		keywords.add(") ");
 		keywords.add("{");
-		
+
 		writer.writelnUnsafe(String.join("", keywords));
 		writer.indent();
 	}
-	
+
 	public void writePostlude()
 	{
 		writer.undent();

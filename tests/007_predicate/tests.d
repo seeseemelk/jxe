@@ -4,7 +4,7 @@ import java.lang.Object;
 
 unittest
 {
-	new TestClass;
+	TestClass.__new();
 }
 
 unittest

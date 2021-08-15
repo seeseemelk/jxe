@@ -1,9 +1,12 @@
 package be.seeseemelk.jtsc.decoders.instrumented;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import be.seeseemelk.jtsc.recompiler.MethodDescriptor;
 import be.seeseemelk.jtsc.recompiler.SourceWriter;
@@ -24,6 +27,7 @@ public final class InstrumentedMethodInsnDecoder
 		if ((opcode & Opcodes.ACC_SUPER) != 0)
 		{
 			writer.writelnUnsafe("super.__construct();");
+			writer.writelnUnsafe("vars = vars[0 .. $-1];");
 			/*int argCount = Type.getArgumentTypes(descriptor).length;
 			LinkedList<String> keywords = new LinkedList<>();
 			LinkedList<String> arguments = new LinkedList<>();
@@ -71,11 +75,11 @@ public final class InstrumentedMethodInsnDecoder
 				break;
 				case Opcodes.INVOKEVIRTUAL:
 				case Opcodes.INVOKEINTERFACE:
-					visitInvokeVirtual(methodDescriptor, writer);
+					visitInvokeVirtual(methodDescriptor, writer, Utils.getClassName(owner), Utils.identifierToD(name), descriptor);
 				break;
-//				case Opcodes.INVOKESTATIC:
-//					visitInvokeStatic(state, Utils.identifierToD(owner), Utils.identifierToD(name), descriptor);
-//				break;
+				case Opcodes.INVOKESTATIC:
+					visitInvokeStatic(writer, Utils.getClassName(owner), Utils.identifierToD(name), descriptor);
+				break;
 				default:
 					throw new UnsupportedOperationException("Unknown method: " + opcode + ", " + owner + ", " + name
 							+ ", " + descriptor + ", " + isInterface);
@@ -90,11 +94,50 @@ public final class InstrumentedMethodInsnDecoder
 		}
 	}
 
-	private static void visitInvokeVirtual(MethodDescriptor methodDescriptor, SourceWriter writer)
+	private static void visitInvokeStatic(SourceWriter writer, String owner, String name, String descriptor)
 	{
-		var type = Utils.typeToName(methodDescriptor.getClassName());
-		var method = methodDescriptor.getName();
-		writer.writelnUnsafe("(cast(",type,") vars[$-1]).",method,"();");
+		writer.writelnUnsafe("// Owner: ",owner);
+		writer.writelnUnsafe("// Name: ",name);
+		writer.writelnUnsafe("// Descriptor: ",descriptor);
+		Type type = Type.getMethodType(descriptor);
+
+		String call = owner+"."+name+"("+getArguments(type)+")";
+		if (type.getReturnType().getSort() == Type.VOID)
+		{
+			writer.writelnUnsafe(call,";");
+		}
+		else
+		{
+			String wrapped = wrapType(call, type.getReturnType());
+			writer.writelnUnsafe("vars ~= ",wrapped,";");
+		}
+		popArguments(writer, type);
+	}
+
+	private static void visitInvokeVirtual(
+			MethodDescriptor methodDescriptor,
+			SourceWriter writer,
+			String owner,
+			String name,
+			String descriptor
+	)
+	{
+		writer.writelnUnsafe("// Invoke virtual");
+		writer.writelnUnsafe("// Descriptor: ",descriptor);
+		var type = Type.getMethodType(descriptor);
+
+		String object = "(cast("+owner+") vars[$-1].asObject)";
+		String call = object+"."+name+"("+getArguments(type)+")";
+		if (type.getReturnType().getSort() == Type.VOID)
+		{
+			writer.writelnUnsafe(call,";");
+		}
+		else
+		{
+			String wrapped = wrapType(call, type.getReturnType());
+			writer.writelnUnsafe("vars ~= ",wrapped,";");
+		}
+		popArguments(writer, type);
 	}
 
 	public static void visitDynamic(
@@ -145,5 +188,50 @@ public final class InstrumentedMethodInsnDecoder
 //		{
 //			throw new RuntimeException("Exception occured while processing invokedynamic", e);
 //		}
+	}
+
+	private static String wrapType(String call, Type type)
+	{
+		switch (type.getSort())
+		{
+		case Type.BOOLEAN:
+			return "JavaVar.ofInt((" + call + " == true) ? 1 : 0)";
+		case Type.INT:
+			return "JavaVar.ofInt(" + call + ")";
+		case Type.OBJECT:
+			return "JavaVar.ofObject(cast(_Object) (" + call + "))";
+		default:
+			throw new RuntimeException(String.format("Unsupported sort: %d", type.getSort()));
+		}
+	}
+
+	private static String getArguments(Type type)
+	{
+		List<String> arguments = new ArrayList<>();
+		Type[] types = type.getArgumentTypes();
+		for (int i = 0; i < types.length; i++)
+		{
+			String argument = "vars[$ - " + (i + 1) + "]";
+			switch (types[i].getSort())
+			{
+			case Type.INT:
+				argument += ".asInt";
+			break;
+			case Type.OBJECT:
+				argument += ".asObject";
+			break;
+			default:
+				throw new RuntimeException(String.format("Unsupported sort: %d", types[i].getSort()));
+			}
+			arguments.add(argument);
+		}
+		return String.join(", ", arguments);
+	}
+
+	private static void popArguments(SourceWriter writer, Type type)
+	{
+		Type[] types = type.getArgumentTypes();
+		if (types.length > 0)
+			writer.writelnUnsafe("vars = vars[0 .. $-",types.length,"];");
 	}
 }

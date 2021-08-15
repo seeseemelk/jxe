@@ -2,13 +2,13 @@ package be.seeseemelk.jtsc.decoders.instrumented;
 
 import org.objectweb.asm.Opcodes;
 
-import be.seeseemelk.jtsc.recompiler.MethodDescriptor;
+import be.seeseemelk.jtsc.recompiler.InstrumentedMethod;
 import be.seeseemelk.jtsc.recompiler.SourceWriter;
 
 public class InstrumentedVarInsnDecoder
 {
 	public static void visit(
-			MethodDescriptor descriptor,
+			InstrumentedMethod method,
 			SourceWriter writer,
 			int opcode,
 			int var
@@ -16,29 +16,26 @@ public class InstrumentedVarInsnDecoder
 	{
 		try
 		{
-			String varName = getVarName(descriptor, var);
-
 			switch (opcode)
 			{
 				case Opcodes.ALOAD:
-					writer.writelnUnsafe("vars ~= JavaVar.ofObject(", varName, ");");
+					writer.writelnUnsafe("vars ~= JavaVar.ofObject(", method.accessVar(var, "asObject"), ");");
 				break;
 				case Opcodes.ILOAD:
-					writer.writelnUnsafe("vars ~= ;" ~ JavaVar.ofInteger());
+					writer.writelnUnsafe("vars ~= JavaVar.ofInt(", method.accessVar(var, "asInt"), ");");
 				break;
 //				case Opcodes.DLOAD:
 //				case Opcodes.FLOAD:
 //				case Opcodes.LLOAD:
 //					visitLoad(state, var);
 //					break;
-//				case Opcodes.ISTORE:
-//				case Opcodes.LSTORE:
-//				case Opcodes.FSTORE:
-//				case Opcodes.DSTORE:
-//				case Opcodes.ASTORE:
-//					visitStore(state, var);
-//					break;
-//				case Opcodes.RET:
+				case Opcodes.ISTORE:
+				case Opcodes.LSTORE:
+				case Opcodes.FSTORE:
+				case Opcodes.DSTORE:
+				case Opcodes.ASTORE:
+					writer.writelnUnsafe(method.getVar(var), " = vars[$-1];");
+				break;
 				default:
 					throw new UnsupportedOperationException("Unknown opcode: " + opcode + ", " + var);
 			}
@@ -49,21 +46,6 @@ public class InstrumentedVarInsnDecoder
 					"Exception occured while processing 0x%X[var=%d]",
 					opcode, var),
 					e);
-		}
-	}
-
-	private static String getVarName(MethodDescriptor descriptor, int var)
-	{
-		if (descriptor.isStatic())
-		{
-			return "var" + var;
-		}
-		else
-		{
-			if (var == 0)
-				return "this";
-			else
-				return "var" + (var - 1);
 		}
 	}
 }

@@ -3,10 +3,11 @@ module java.lang.Object;
 public
 {
 	// These packages should always be imported.
+	import java.lang.ClassCastException : ClassCastException;
+	import java.lang.Exception : _Exception, __JavaException;
 	import java.lang.Integer : Integer;
 	import java.lang.invoke.LambdaMetafactory : LambdaMetafactory;
-	import java.lang.Exception : _Exception, __JavaException;
-	import java.lang.ClassCastException : ClassCastException;
+	import java.lang.String : String;
 }
 
 abstract class _Object : Object

@@ -1,4 +1,4 @@
 conv/
-conv_instrumented/
+conv_instr/
 bin/
-bin_instrumented/
+bin_instr/

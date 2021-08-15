@@ -2,15 +2,23 @@ package be.seeseemelk.jtsc.recompiler;
 
 import org.objectweb.asm.Opcodes;
 
+import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedConditionalInsnDecoder;
 import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedFieldInsnDecoder;
 import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedInsnDecoder;
+import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedLoadConstantInsnDecoder;
 import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedMethodInsnDecoder;
+import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedTypeInsnDecoder;
+import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedUnconditionalInsnDecoder;
 import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedVarInsnDecoder;
+import be.seeseemelk.jtsc.decoders.instrumented.IntegerIncrementInsnDecoder;
 import be.seeseemelk.jtsc.instructions.ConditionalInstruction;
 import be.seeseemelk.jtsc.instructions.FieldInstruction;
 import be.seeseemelk.jtsc.instructions.Instruction;
+import be.seeseemelk.jtsc.instructions.IntegerIncrementInstruction;
 import be.seeseemelk.jtsc.instructions.InvokeDynamicInstruction;
+import be.seeseemelk.jtsc.instructions.LoadConstantInstruction;
 import be.seeseemelk.jtsc.instructions.MethodCallInstruction;
+import be.seeseemelk.jtsc.instructions.TypeInstruction;
 import be.seeseemelk.jtsc.instructions.UnconditionalInstruction;
 import be.seeseemelk.jtsc.instructions.VarInstruction;
 import be.seeseemelk.jtsc.instructions.ZeroArgInstruction;
@@ -20,6 +28,7 @@ public final class InstrumentedStreamWriter
 	private final SourceWriter writer;
 	private final MethodDescriptor descriptor;
 	private final InstructionStream stream;
+	private final InstrumentedMethod method;
 
 	private InstrumentedStreamWriter(
 		SourceWriter writer,
@@ -30,6 +39,7 @@ public final class InstrumentedStreamWriter
 		this.writer = writer;
 		this.descriptor = descriptor;
 		this.stream = stream;
+		this.method = new InstrumentedMethod(descriptor, stream);
 	}
 
 	public static void write(InstructionStream stream, MethodDescriptor descriptor, SourceWriter writer)
@@ -43,7 +53,11 @@ public final class InstrumentedStreamWriter
 
 	private void writeBody()
 	{
-		writer.writelnUnsafe("import java.lang.instrumentation;");
+		writer.writelnUnsafe("import java.lang.instrumentation : JavaVar;");
+		for (int i = 0; i < stream.getLocals() - 1; i++)
+		{
+			writer.writelnUnsafe("JavaVar var", i, ";");
+		}
 		writer.writelnUnsafe("JavaVar[] vars;");
 		writer.writelnUnsafe("size_t address = 0;");
 		writer.writelnUnsafe("for (;;) {");
@@ -53,7 +67,7 @@ public final class InstrumentedStreamWriter
 		{
 			writer.writelnUnsafe("case ", i, ":");
 			writer.indent();
-			writeInstruction(stream.get(i));
+			writeInstruction(stream, i);
 			writer.undent();
 		}
 		writer.writelnUnsafe("default:");
@@ -65,13 +79,16 @@ public final class InstrumentedStreamWriter
 		writer.writelnUnsafe("}");
 	}
 
-	private void writeInstruction(Instruction instruction)
+	private void writeInstruction(InstructionStream stream, int address)
 	{
+		Instruction instruction = stream.get(address);
+		int next = address + 1;
+
 		if (instruction instanceof VarInstruction)
 		{
 			VarInstruction instr = (VarInstruction) instruction;
 			InstrumentedVarInsnDecoder.visit(
-					descriptor,
+					method,
 					writer,
 					instr.getOpcode(),
 					instr.getVar()
@@ -93,11 +110,17 @@ public final class InstrumentedStreamWriter
 		else if (instruction instanceof ZeroArgInstruction)
 		{
 			ZeroArgInstruction instr = (ZeroArgInstruction) instruction;
-			InstrumentedInsnDecoder.visit(writer, instr.getOpcode());
+			InstrumentedInsnDecoder.visit(writer, instr.getOpcode(), descriptor);
 		}
 		else if (instruction instanceof ConditionalInstruction)
 		{
-			writer.writelnUnsafe("// Conditional");
+			ConditionalInstruction instr = (ConditionalInstruction) instruction;
+			InstrumentedConditionalInsnDecoder.visit(
+					writer,
+					instr.getOpcode(),
+					stream.getIndex(instr.getTarget()),
+					next
+			);
 		}
 		else if (instruction instanceof FieldInstruction)
 		{
@@ -121,19 +144,55 @@ public final class InstrumentedStreamWriter
 					instr.getBootstrapMethodArguments()
 			);
 		}
+		else if (instruction instanceof LoadConstantInstruction instr)
+		{
+			InstrumentedLoadConstantInsnDecoder.visit(
+					writer,
+					instr.getValue()
+			);
+		}
+		else if (instruction instanceof TypeInstruction instr)
+		{
+			InstrumentedTypeInsnDecoder.visit(
+					writer,
+					instr.getOpcode(),
+					instr.getType()
+			);
+		}
+		else if (instruction instanceof IntegerIncrementInstruction instr)
+		{
+			IntegerIncrementInsnDecoder.visit(
+					method,
+					writer,
+					instr.getVar(),
+					instr.getCount()
+			);
+		}
+		else if (instruction instanceof UnconditionalInstruction instr)
+		{
+			InstrumentedUnconditionalInsnDecoder.visit(
+					writer,
+					instr.getOpcode(),
+					stream.getIndex(instr.getTarget())
+			);
+		}
 		else
 			throw new RuntimeException("Unknown instruction of type " + instruction.getClass().getSimpleName());
 
 		if (instruction instanceof UnconditionalInstruction)
 		{
 			var uncond = (UnconditionalInstruction) instruction;
-			var index = stream.getIndex(uncond.getTarget());
-			writer.writelnUnsafe("address = ", index, ";");
-			writer.writelnUnsafe("break;");
+			next = stream.getIndex(uncond.getTarget());
 		}
-		else if (!isReturn(instruction))
+
+		boolean isReturn = isReturn(instruction);
+		boolean isConditional = isConditional(instruction);
+		if (!isReturn && !isConditional)
 		{
-			writer.writelnUnsafe("address++;");
+			writer.writelnUnsafe("address = ", next, ";");
+		}
+		if (!isReturn)
+		{
 			writer.writelnUnsafe("break;");
 		}
 	}
@@ -143,11 +202,22 @@ public final class InstrumentedStreamWriter
 		if (instruction instanceof ZeroArgInstruction)
 		{
 			var instr = (ZeroArgInstruction) instruction;
-			return instr.getOpcode() == Opcodes.RETURN;
+			var opcode = instr.getOpcode();
+			return opcode == Opcodes.RETURN
+			    || opcode == Opcodes.ARETURN
+			    || opcode == Opcodes.DRETURN
+			    || opcode == Opcodes.FRETURN
+			    || opcode == Opcodes.IRETURN
+			    || opcode == Opcodes.LRETURN
+			;
 		}
-		else
 		{
 			return false;
 		}
+	}
+
+	private boolean isConditional(Instruction instruction)
+	{
+		return instruction instanceof ConditionalInstruction;
 	}
 }

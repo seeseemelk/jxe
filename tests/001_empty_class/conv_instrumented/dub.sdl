@@ -1,0 +1,2 @@
+name "some_project"
+dependency "j4dlang" version="*"

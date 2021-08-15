@@ -13,12 +13,13 @@ public class InstructionStream
 {
 	private List<Instruction> instructions = new ArrayList<>();
 	private Map<Label, Integer> labels = new HashMap<>();
-	
+	private int locals = 0;
+
 	public void add(Instruction instruction)
 	{
 		instructions.add(instruction);
 	}
-	
+
 	public void addLabel(Label label)
 	{
 		labels.put(label, instructions.size());
@@ -28,14 +29,24 @@ public class InstructionStream
 	{
 		return instructions.size();
 	}
-	
+
 	public Instruction get(int index)
 	{
 		return instructions.get(index);
 	}
-	
+
 	public int getIndex(Label label)
 	{
 		return labels.get(label);
+	}
+
+	public void setLocals(int locals)
+	{
+		this.locals = locals;
+	}
+
+	public int getLocals()
+	{
+		return locals;
 	}
 }

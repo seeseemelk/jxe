@@ -6,15 +6,15 @@ BUILD_JXE ?= 1
 
 .PHONY: test-normal
 test-normal: $(CLASSES) build-jxe
-	$(JXE) $(JAVA_ARGS) bin$(SUFFIX) conv$(SUFFIX)
-	cp tests.d conv$(SUFFIX)/source
-	cd conv$(SUFFIX) && dub test
+	$(JXE) $(JAVA_ARGS) bin conv
+	cp tests.d conv/source
+	cd conv && dub test
 
 .PHONY: test-instrumented
 test-instrumented: $(CLASSES) build-jxe
-	$(JXE) $(JAVA_ARGS) --only-instrumented bin$(SUFFIX) conv$(SUFFIX)
-	cp tests.d conv/source
-	cd conv && dub test
+	$(JXE) $(JAVA_ARGS) --only-instrumented bin conv_instr
+	cp tests.d conv_instr/source
+	cd conv_instr && dub test
 
 .PHONY: build-jxe
 build-jxe:
@@ -22,5 +22,5 @@ ifeq (1,$(BUILD_JXE))
 	cd ../.. && ./gradlew shadowJar
 endif
 
-bin$(SUFFIX)/%.class: src/%.java
-	javac -d bin$(SUFFIX) -cp src $^
+bin/%.class: src/%.java
+	javac -d bin -cp src $^
