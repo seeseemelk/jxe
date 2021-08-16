@@ -215,10 +215,12 @@ public final class InstrumentedMethodInsnDecoder
 			String argument = "vars[$ - " + (i + 1) + "]";
 			switch (types[i].getSort())
 			{
+			case Type.BOOLEAN:
 			case Type.CHAR:
 			case Type.INT:
 				argument += ".asInt";
 			break;
+			case Type.ARRAY:
 			case Type.OBJECT:
 				argument += ".asObject";
 			break;

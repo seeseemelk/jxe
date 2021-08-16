@@ -12,6 +12,9 @@ public class InstrumentedTypeInsnDecoder
 		String dType = Utils.typeToName(type);
 		switch (opcode)
 		{
+		case Opcodes.NEW:
+			writer.writelnUnsafe("vars ~= JavaVar.ofObject(new ", type, ");");
+		break;
 		case Opcodes.CHECKCAST:
 			writer.writelnUnsafe("if (vars[$-1].asObject !is null && (cast(", dType, ") vars[$-1].asObject) is null)");
 			writer.indent();
