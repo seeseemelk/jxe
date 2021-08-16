@@ -32,10 +32,8 @@ public final class InstrumentedInsnDecoder
 				case Opcodes.FRETURN:
 					visitReturnPrimitive(writer, "asFloat");
 				break;
-//				case Opcodes.IRETURN:
 //				case Opcodes.LRETURN:
 //				case Opcodes.DRETURN:
-//				case Opcodes.ARETURN:
 //					visitNReturn(state);
 //					break;
 //				case Opcodes.DUP:

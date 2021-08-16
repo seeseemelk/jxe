@@ -45,7 +45,7 @@ public class InstrumentedMethod
 			return false;
 		else if (index < argOffset())
 			return false;
-		else if (index < descriptor.getArguments().size())
+		else if (index < descriptor.getArguments().size() + argOffset())
 			return true;
 		else
 			return false;

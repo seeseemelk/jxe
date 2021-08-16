@@ -55,12 +55,11 @@ public class BaseWriter
 
 		int argCount = 0;
 		// Non-static functions have a 'this' parameter at index 0.
-		int offset = descriptor.isStatic() ? 0 : 1;
 		for (var arg : descriptor.getArguments())
 		{
 			keywords.add(Utils.getClassName(arg));
 			keywords.add(" ");
-			keywords.add("arg" + (argCount + offset));
+			keywords.add("arg" + (argCount));
 			argCount++;
 			if (argCount < descriptor.getArguments().size())
 				keywords.add(", ");
