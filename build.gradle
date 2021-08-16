@@ -41,11 +41,10 @@ test {
 }
 
 task integration(group: "Verification", description: "Run integration tests") {
-	it.dependsOn jar
 	doLast {
 		exec {
 			workingDir "tests"
-			commandLine "make test-all"
+			commandLine "make", "test-instrumented"
 		}
 	}
 }
