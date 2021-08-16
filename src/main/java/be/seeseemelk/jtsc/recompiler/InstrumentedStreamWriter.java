@@ -5,6 +5,7 @@ import org.objectweb.asm.Opcodes;
 import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedConditionalInsnDecoder;
 import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedFieldInsnDecoder;
 import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedInsnDecoder;
+import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedIntInsnDecoder;
 import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedLoadConstantInsnDecoder;
 import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedMethodInsnDecoder;
 import be.seeseemelk.jtsc.decoders.instrumented.InstrumentedTypeInsnDecoder;
@@ -14,6 +15,7 @@ import be.seeseemelk.jtsc.decoders.instrumented.IntegerIncrementInsnDecoder;
 import be.seeseemelk.jtsc.instructions.ConditionalInstruction;
 import be.seeseemelk.jtsc.instructions.FieldInstruction;
 import be.seeseemelk.jtsc.instructions.Instruction;
+import be.seeseemelk.jtsc.instructions.IntInstruction;
 import be.seeseemelk.jtsc.instructions.IntegerIncrementInstruction;
 import be.seeseemelk.jtsc.instructions.InvokeDynamicInstruction;
 import be.seeseemelk.jtsc.instructions.LoadConstantInstruction;
@@ -174,6 +176,14 @@ public final class InstrumentedStreamWriter
 					writer,
 					instr.getOpcode(),
 					stream.getIndex(instr.getTarget())
+			);
+		}
+		else if (instruction instanceof IntInstruction instr)
+		{
+			InstrumentedIntInsnDecoder.visit(
+					writer,
+					instr.getOpcode(),
+					instr.getValue()
 			);
 		}
 		else

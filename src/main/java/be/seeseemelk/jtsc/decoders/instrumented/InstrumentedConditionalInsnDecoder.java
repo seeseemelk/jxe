@@ -46,6 +46,18 @@ public class InstrumentedConditionalInsnDecoder
 				break;
 			case Opcodes.IF_ICMPLE:
 				visitDoubleConditional(writer, address, other, "<=");
+			break;
+
+			case Opcodes.IFNULL:
+				writer.writelnUnsafe("if (vars[$-1].asObject is null)");
+				writer.indent();
+				writer.writelnUnsafe("address = ",address,";");
+				writer.undent();
+				writer.writelnUnsafe("else");
+				writer.indent();
+				writer.writelnUnsafe("address = ",other);
+				writer.undent();
+			break;
 
 			default:
 				throw new UnsupportedOperationException(

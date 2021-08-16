@@ -58,7 +58,12 @@ public final class InstrumentedFieldInsnDecoder
 		switch (sort)
 		{
 		case Type.INT:
+		case Type.BOOLEAN:
 			type = "ofInt";
+		break;
+		case Type.OBJECT:
+		case Type.ARRAY:
+			type = "ofObject";
 		break;
 		default:
 			throw new RuntimeException("Unknown descriptor: " + descriptor);
@@ -81,9 +86,13 @@ public final class InstrumentedFieldInsnDecoder
 		switch (type.getSort())
 		{
 		case Type.INT:
+		case Type.BOOLEAN:
 			return String.format("%s.asInt", accessor);
+		case Type.OBJECT:
+		case Type.ARRAY:
+			return String.format("%s.asObject", accessor);
 		default:
-			throw new RuntimeException("Unknown descriptor " + descriptor);
+			throw new RuntimeException("Unknown descriptor " + descriptor + " [sort=" + type.getSort() + "]");
 		}
 	}
 }
