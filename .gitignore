@@ -44,4 +44,5 @@ server_input/
 *.a
 
 # Self-hosted version
-selfhosted
+selfhosted/
+extracted/
