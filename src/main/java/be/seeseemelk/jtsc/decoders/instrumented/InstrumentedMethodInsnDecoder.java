@@ -196,6 +196,7 @@ public final class InstrumentedMethodInsnDecoder
 		{
 		case Type.BOOLEAN:
 			return "JavaVar.ofInt((" + call + " == true) ? 1 : 0)";
+		case Type.CHAR:
 		case Type.INT:
 			return "JavaVar.ofInt(" + call + ")";
 		case Type.OBJECT:
@@ -214,6 +215,7 @@ public final class InstrumentedMethodInsnDecoder
 			String argument = "vars[$ - " + (i + 1) + "]";
 			switch (types[i].getSort())
 			{
+			case Type.CHAR:
 			case Type.INT:
 				argument += ".asInt";
 			break;

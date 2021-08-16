@@ -103,8 +103,11 @@ public final class InstrumentedInsnDecoder
 				case Opcodes.I2F:
 					visitPrimitiveCast(writer, "ofFloat", "asInt");
 				break;
+				case Opcodes.POP:
+					writer.writelnUnsafe("vars = vars[0 .. $-1];");
+				break;
 				default:
-					throw new UnsupportedOperationException(String.format("Unknown method: 0x%02X", opcode));
+					throw new UnsupportedOperationException(String.format("Unknown opcode: 0x%02X", opcode));
 			}
 		}
 		catch (Exception e)
