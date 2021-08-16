@@ -42,3 +42,6 @@ server_input/
 
 # D files
 *.a
+
+# Self-hosted version
+selfhosted
